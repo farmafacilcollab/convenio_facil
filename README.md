@@ -65,10 +65,12 @@ Manuais completos estão disponíveis na pasta [`doc/`](doc/README.md):
 | [Exportação](doc/exportacao.md) | Geração de PDF, XLSX e ZIP de fotos |
 | [Importação CSV](doc/importacao-csv.md) | Formato e processo de importação em massa |
 | [Configuração](doc/configuracao.md) | Setup do ambiente, Supabase e deploy |
+| [Integração Supabase](doc/integracao-supabase.md) | Migrations, RLS, storage, clientes e troubleshooting |
+| [Deploy Vercel](doc/deploy-vercel.md) | Publicação, domínio, variáveis e monitoramento |
 
 ## Deploy
 
-O projeto está preparado para deploy na **Vercel**. Importe o repositório, configure as variáveis de ambiente e faça o deploy. Veja detalhes em [doc/configuracao.md](doc/configuracao.md).
+O projeto está preparado para deploy na **Vercel**. Importe o repositório, configure as variáveis de ambiente e faça o deploy. Veja detalhes em [doc/deploy-vercel.md](doc/deploy-vercel.md).
 
 ## Licença
 
