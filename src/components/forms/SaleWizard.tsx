@@ -99,20 +99,31 @@ export function SaleWizard() {
     if (!storeId || !user || !selectedConvenio || !selectedConveniado) return;
 
     setSubmitting(true);
+    console.log("[SALE] === Início do envio ===");
+    console.log("[SALE] storeId:", storeId);
+    console.log("[SALE] user.id:", user.id);
+    console.log("[SALE] convenio:", selectedConvenio.id, selectedConvenio.company_name);
+    console.log("[SALE] conveniado:", selectedConveniado.id, selectedConveniado.full_name);
+    console.log("[SALE] imagens:", imageCapture.images.length, imageCapture.images.map((img) => img ? `${Math.round(img.compressedSize / 1024)}KB` : "null"));
 
     const doSubmit = async (): Promise<string> => {
       const supabase = createClient();
 
       // 1. Get store slug for storage path
+      console.log("[SALE] 1) Buscando slug da loja...");
+      const t1 = Date.now();
       const { data: store, error: storeErr } = await supabase
         .from("stores")
         .select("slug")
         .eq("id", storeId)
         .single();
+      console.log("[SALE] 1) Resultado:", { store, storeErr, ms: Date.now() - t1 });
 
       if (storeErr || !store) throw new Error("Loja não encontrada");
 
       // 2. Create sale record first to get ID
+      console.log("[SALE] 2) Criando registro de venda...");
+      const t2 = Date.now();
       const { data: sale, error: saleError } = await supabase
         .from("sales")
         .insert({
@@ -127,40 +138,49 @@ export function SaleWizard() {
         })
         .select("id")
         .single();
+      console.log("[SALE] 2) Resultado:", { sale, saleError, ms: Date.now() - t2 });
 
       if (saleError || !sale) {
         throw saleError ?? new Error("Erro ao criar venda");
       }
 
       // 3. Upload images
-      for (const img of imageCapture.images) {
-        if (!img) continue;
+      for (let i = 0; i < imageCapture.images.length; i++) {
+        const img = imageCapture.images[i];
+        if (!img) { console.log(`[SALE] 3) Imagem ${i}: null, pulando`); continue; }
         const suffix =
           img.installment_number !== null
             ? `req_${img.installment_number}`
             : "req_single";
         const path = `${store.slug}/${sale.id}/${suffix}.webp`;
 
+        console.log(`[SALE] 3a) Upload imagem ${i}: path=${path}, size=${img.file.size}bytes, type=${img.file.type}`);
+        const t3a = Date.now();
         const { error: uploadError } = await supabase.storage
           .from("requisitions")
           .upload(path, img.file, {
             contentType: "image/webp",
             upsert: false,
           });
+        console.log(`[SALE] 3a) Upload resultado:`, { uploadError, ms: Date.now() - t3a });
 
         if (uploadError) throw uploadError;
 
         // Insert sale_images record
+        console.log(`[SALE] 3b) Insert sale_images ${i}...`);
+        const t3b = Date.now();
         const { error: imgError } = await supabase.from("sale_images").insert({
           sale_id: sale.id,
           installment_number: img.installment_number,
           storage_path: path,
           file_size_kb: Math.round(img.compressedSize / 1024),
         });
+        console.log(`[SALE] 3b) Insert resultado:`, { imgError, ms: Date.now() - t3b });
 
         if (imgError) throw imgError;
       }
 
+      console.log("[SALE] === Tudo OK, sale.id:", sale.id, "===");
       return sale.id;
     };
 
@@ -172,11 +192,12 @@ export function SaleWizard() {
         ),
       ]);
 
+      console.log("[SALE] Sucesso! Redirecionando para:", `/store/sales/${saleId}`);
       imageCapture.cleanup();
       toast.success(ptBR.saleSuccess);
       router.push(`/store/sales/${saleId}`);
     } catch (err: unknown) {
-      console.error("Sale submission error:", err);
+      console.error("[SALE] ERRO FINAL:", err);
       const message =
         err instanceof Error && err.message === "TIMEOUT"
           ? "Tempo limite excedido. Verifique sua conexão e tente novamente."
@@ -184,6 +205,7 @@ export function SaleWizard() {
       toast.error(message);
     } finally {
       setSubmitting(false);
+      console.log("[SALE] === Fim do envio ===");
     }
   };
 
