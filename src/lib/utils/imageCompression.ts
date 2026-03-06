@@ -14,7 +14,7 @@ export function isValidImageFile(file: File): boolean {
 }
 
 /**
- * Compresses an image file to webp format, max 500KB, max 1280px dimension.
+ * Compresses an image file to webp format, max 200KB, max 1024px dimension.
  */
 export async function compressImage(
   file: File,
@@ -27,10 +27,11 @@ export async function compressImage(
   const originalSize = file.size;
 
   const compressed = await imageCompression(file, {
-    maxSizeMB: 0.5,
-    maxWidthOrHeight: 1280,
+    maxSizeMB: 0.2,
+    maxWidthOrHeight: 1024,
     useWebWorker: true,
     fileType: "image/webp",
+    initialQuality: 0.7,
     onProgress: (p) => onProgress?.(p),
   });
 

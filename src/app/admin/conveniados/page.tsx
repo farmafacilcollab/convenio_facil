@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { createBrowserClient } from "@supabase/ssr";
-import type { Database } from "@/lib/types/database.types";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createClient } from "@/lib/supabase/client";
 import type { Conveniado, Convenio } from "@/lib/types/app.types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -48,22 +47,19 @@ export default function ConveniadosPage() {
   const [editItem, setEditItem] = useState<Conveniado | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const supabase = createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabaseRef = useRef(createClient());
 
   const fetchConvenios = useCallback(async () => {
-    const { data } = await supabase
+    const { data } = await supabaseRef.current
       .from("convenios")
       .select("id, company_name")
       .eq("active", true)
       .order("company_name");
     setConvenios(data ?? []);
-  }, [supabase]);
+  }, []);
 
   const fetchConveniados = useCallback(async () => {
-    let query = supabase
+    let query = supabaseRef.current
       .from("conveniados")
       .select("*, convenio:convenios(company_name)")
       .order("full_name", { ascending: true });
@@ -82,7 +78,7 @@ export default function ConveniadosPage() {
         convenio: Array.isArray(d.convenio) ? d.convenio[0] ?? null : d.convenio,
       }))
     );
-  }, [showInactive, filterConvenio, supabase]);
+  }, [showInactive, filterConvenio]);
 
   useEffect(() => {
     fetchConvenios();

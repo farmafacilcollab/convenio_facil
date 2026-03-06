@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { OfflineBanner } from "./OfflineBanner";
 import { Button } from "@/components/ui/button";
@@ -35,16 +35,14 @@ const NAV_ITEMS = [
 export function StoreShell({ children }: { children: React.ReactNode }) {
   const { profile, isLoading, signOut } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
 
   const handleSignOut = async () => {
     try {
       await signOut();
     } catch {
-      // Forçar navegação mesmo se signOut falhar
+      // Ignorar erro
     }
-    router.push("/login");
-    router.refresh();
+    window.location.href = "/login";
   };
 
   if (isLoading) {

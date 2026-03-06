@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { OfflineBanner } from "./OfflineBanner";
@@ -59,17 +59,15 @@ const NAV_ITEMS = [
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const { profile, isLoading, signOut } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const handleSignOut = async () => {
     try {
       await signOut();
     } catch {
-      // Forçar navegação mesmo se signOut falhar
+      // Ignorar erro
     }
-    router.push("/login");
-    router.refresh();
+    window.location.href = "/login";
   };
 
   if (isLoading) {
