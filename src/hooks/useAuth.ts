@@ -37,28 +37,35 @@ export function useAuth() {
   );
 
   useEffect(() => {
-    const getSession = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const clearState = () =>
+      setState({
+        user: null,
+        profile: null,
+        role: null,
+        storeId: null,
+        isLoading: false,
+      });
 
-      if (user) {
-        const profile = await fetchProfile(user.id);
-        setState({
-          user,
-          profile,
-          role: profile?.role ?? null,
-          storeId: profile?.store_id ?? null,
-          isLoading: false,
-        });
-      } else {
-        setState({
-          user: null,
-          profile: null,
-          role: null,
-          storeId: null,
-          isLoading: false,
-        });
+    const getSession = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const profile = await fetchProfile(user.id);
+          setState({
+            user,
+            profile,
+            role: profile?.role ?? null,
+            storeId: profile?.store_id ?? null,
+            isLoading: false,
+          });
+        } else {
+          clearState();
+        }
+      } catch {
+        clearState();
       }
     };
 
@@ -67,23 +74,21 @@ export function useAuth() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        const profile = await fetchProfile(session.user.id);
-        setState({
-          user: session.user,
-          profile,
-          role: profile?.role ?? null,
-          storeId: profile?.store_id ?? null,
-          isLoading: false,
-        });
-      } else {
-        setState({
-          user: null,
-          profile: null,
-          role: null,
-          storeId: null,
-          isLoading: false,
-        });
+      try {
+        if (session?.user) {
+          const profile = await fetchProfile(session.user.id);
+          setState({
+            user: session.user,
+            profile,
+            role: profile?.role ?? null,
+            storeId: profile?.store_id ?? null,
+            isLoading: false,
+          });
+        } else {
+          clearState();
+        }
+      } catch {
+        clearState();
       }
     });
 
@@ -91,7 +96,11 @@ export function useAuth() {
   }, [supabase, fetchProfile]);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Forçar limpeza local mesmo se signOut falhar
+    }
   }, [supabase]);
 
   return { ...state, signOut };

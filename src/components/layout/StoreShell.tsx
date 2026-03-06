@@ -38,16 +38,22 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      await signOut();
+    } catch {
+      // Forçar navegação mesmo se signOut falhar
+    }
     router.push("/login");
+    router.refresh();
   };
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="space-y-4 text-center">
-          <Skeleton className="mx-auto h-8 w-48" />
-          <Skeleton className="mx-auto h-4 w-32" />
+          <Skeleton className="mx-auto h-8 w-48 bg-border" />
+          <Skeleton className="mx-auto h-4 w-32 bg-border" />
+          <p className="text-sm text-muted-foreground">Carregando...</p>
         </div>
       </div>
     );
