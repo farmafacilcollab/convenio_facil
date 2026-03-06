@@ -4,8 +4,8 @@
 -- This migration creates all initial data directly in the database,
 -- without requiring the Node.js seed script or the service_role key.
 -- Passwords are hashed using bcrypt (pgcrypto).
+-- Uses DO blocks with NOT EXISTS to avoid constraint issues across Supabase versions.
 
--- Ensure pgcrypto is available (Supabase already has it, but just in case)
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ============================================
@@ -20,158 +20,186 @@ INSERT INTO public.stores (id, name, cnpj, email, slug) VALUES
 ON CONFLICT (cnpj) DO NOTHING;
 
 -- ============================================
--- 2. INSERT AUTH USERS (auth.users + auth.identities)
+-- 2. INSERT AUTH USERS + IDENTITIES
+--    (uses DO blocks to safely skip existing records)
 -- ============================================
 
--- Store user 1 — loja01
-INSERT INTO auth.users (
-  id, instance_id, email, encrypted_password, email_confirmed_at,
-  aud, role, raw_app_meta_data, raw_user_meta_data,
-  is_super_admin, created_at, updated_at, confirmation_token, recovery_token
-) VALUES (
-  'b1000000-0000-0000-0000-000000000001',
-  '00000000-0000-0000-0000-000000000000',
-  'farmafacil.loja01@hotmail.com',
-  crypt('FarmaFacil@2026', gen_salt('bf')),
-  now(), 'authenticated', 'authenticated',
-  '{"provider":"email","providers":["email"]}', '{}',
-  false, now(), now(), '', ''
-) ON CONFLICT (email) DO NOTHING;
+DO $$
+BEGIN
+  -- Store user 1 — loja01
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'farmafacil.loja01@hotmail.com') THEN
+    INSERT INTO auth.users (
+      id, instance_id, email, encrypted_password, email_confirmed_at,
+      aud, role, raw_app_meta_data, raw_user_meta_data,
+      is_super_admin, created_at, updated_at, confirmation_token, recovery_token
+    ) VALUES (
+      'b1000000-0000-0000-0000-000000000001',
+      '00000000-0000-0000-0000-000000000000',
+      'farmafacil.loja01@hotmail.com',
+      crypt('FarmaFacil@2026', gen_salt('bf')),
+      now(), 'authenticated', 'authenticated',
+      '{"provider":"email","providers":["email"]}', '{}',
+      false, now(), now(), '', ''
+    );
+  END IF;
 
-INSERT INTO auth.identities (
-  id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
-) VALUES (
-  'b1000000-0000-0000-0000-000000000001',
-  'b1000000-0000-0000-0000-000000000001',
-  jsonb_build_object('sub', 'b1000000-0000-0000-0000-000000000001', 'email', 'farmafacil.loja01@hotmail.com'),
-  'email', 'b1000000-0000-0000-0000-000000000001',
-  now(), now(), now()
-) ON CONFLICT (provider, provider_id) DO NOTHING;
+  IF NOT EXISTS (SELECT 1 FROM auth.identities WHERE user_id = 'b1000000-0000-0000-0000-000000000001' AND provider = 'email') THEN
+    INSERT INTO auth.identities (
+      id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
+    ) VALUES (
+      'b1000000-0000-0000-0000-000000000001',
+      'b1000000-0000-0000-0000-000000000001',
+      jsonb_build_object('sub', 'b1000000-0000-0000-0000-000000000001', 'email', 'farmafacil.loja01@hotmail.com'),
+      'email', 'b1000000-0000-0000-0000-000000000001',
+      now(), now(), now()
+    );
+  END IF;
 
--- Store user 2 — loja02
-INSERT INTO auth.users (
-  id, instance_id, email, encrypted_password, email_confirmed_at,
-  aud, role, raw_app_meta_data, raw_user_meta_data,
-  is_super_admin, created_at, updated_at, confirmation_token, recovery_token
-) VALUES (
-  'b1000000-0000-0000-0000-000000000002',
-  '00000000-0000-0000-0000-000000000000',
-  'farmafacil.loja02@hotmail.com',
-  crypt('FarmaFacil@2026', gen_salt('bf')),
-  now(), 'authenticated', 'authenticated',
-  '{"provider":"email","providers":["email"]}', '{}',
-  false, now(), now(), '', ''
-) ON CONFLICT (email) DO NOTHING;
+  -- Store user 2 — loja02
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'farmafacil.loja02@hotmail.com') THEN
+    INSERT INTO auth.users (
+      id, instance_id, email, encrypted_password, email_confirmed_at,
+      aud, role, raw_app_meta_data, raw_user_meta_data,
+      is_super_admin, created_at, updated_at, confirmation_token, recovery_token
+    ) VALUES (
+      'b1000000-0000-0000-0000-000000000002',
+      '00000000-0000-0000-0000-000000000000',
+      'farmafacil.loja02@hotmail.com',
+      crypt('FarmaFacil@2026', gen_salt('bf')),
+      now(), 'authenticated', 'authenticated',
+      '{"provider":"email","providers":["email"]}', '{}',
+      false, now(), now(), '', ''
+    );
+  END IF;
 
-INSERT INTO auth.identities (
-  id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
-) VALUES (
-  'b1000000-0000-0000-0000-000000000002',
-  'b1000000-0000-0000-0000-000000000002',
-  jsonb_build_object('sub', 'b1000000-0000-0000-0000-000000000002', 'email', 'farmafacil.loja02@hotmail.com'),
-  'email', 'b1000000-0000-0000-0000-000000000002',
-  now(), now(), now()
-) ON CONFLICT (provider, provider_id) DO NOTHING;
+  IF NOT EXISTS (SELECT 1 FROM auth.identities WHERE user_id = 'b1000000-0000-0000-0000-000000000002' AND provider = 'email') THEN
+    INSERT INTO auth.identities (
+      id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
+    ) VALUES (
+      'b1000000-0000-0000-0000-000000000002',
+      'b1000000-0000-0000-0000-000000000002',
+      jsonb_build_object('sub', 'b1000000-0000-0000-0000-000000000002', 'email', 'farmafacil.loja02@hotmail.com'),
+      'email', 'b1000000-0000-0000-0000-000000000002',
+      now(), now(), now()
+    );
+  END IF;
 
--- Store user 3 — loja03
-INSERT INTO auth.users (
-  id, instance_id, email, encrypted_password, email_confirmed_at,
-  aud, role, raw_app_meta_data, raw_user_meta_data,
-  is_super_admin, created_at, updated_at, confirmation_token, recovery_token
-) VALUES (
-  'b1000000-0000-0000-0000-000000000003',
-  '00000000-0000-0000-0000-000000000000',
-  'farmafacil.loja03@hotmail.com',
-  crypt('FarmaFacil@2026', gen_salt('bf')),
-  now(), 'authenticated', 'authenticated',
-  '{"provider":"email","providers":["email"]}', '{}',
-  false, now(), now(), '', ''
-) ON CONFLICT (email) DO NOTHING;
+  -- Store user 3 — loja03
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'farmafacil.loja03@hotmail.com') THEN
+    INSERT INTO auth.users (
+      id, instance_id, email, encrypted_password, email_confirmed_at,
+      aud, role, raw_app_meta_data, raw_user_meta_data,
+      is_super_admin, created_at, updated_at, confirmation_token, recovery_token
+    ) VALUES (
+      'b1000000-0000-0000-0000-000000000003',
+      '00000000-0000-0000-0000-000000000000',
+      'farmafacil.loja03@hotmail.com',
+      crypt('FarmaFacil@2026', gen_salt('bf')),
+      now(), 'authenticated', 'authenticated',
+      '{"provider":"email","providers":["email"]}', '{}',
+      false, now(), now(), '', ''
+    );
+  END IF;
 
-INSERT INTO auth.identities (
-  id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
-) VALUES (
-  'b1000000-0000-0000-0000-000000000003',
-  'b1000000-0000-0000-0000-000000000003',
-  jsonb_build_object('sub', 'b1000000-0000-0000-0000-000000000003', 'email', 'farmafacil.loja03@hotmail.com'),
-  'email', 'b1000000-0000-0000-0000-000000000003',
-  now(), now(), now()
-) ON CONFLICT (provider, provider_id) DO NOTHING;
+  IF NOT EXISTS (SELECT 1 FROM auth.identities WHERE user_id = 'b1000000-0000-0000-0000-000000000003' AND provider = 'email') THEN
+    INSERT INTO auth.identities (
+      id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
+    ) VALUES (
+      'b1000000-0000-0000-0000-000000000003',
+      'b1000000-0000-0000-0000-000000000003',
+      jsonb_build_object('sub', 'b1000000-0000-0000-0000-000000000003', 'email', 'farmafacil.loja03@hotmail.com'),
+      'email', 'b1000000-0000-0000-0000-000000000003',
+      now(), now(), now()
+    );
+  END IF;
 
--- Store user 4 — loja04
-INSERT INTO auth.users (
-  id, instance_id, email, encrypted_password, email_confirmed_at,
-  aud, role, raw_app_meta_data, raw_user_meta_data,
-  is_super_admin, created_at, updated_at, confirmation_token, recovery_token
-) VALUES (
-  'b1000000-0000-0000-0000-000000000004',
-  '00000000-0000-0000-0000-000000000000',
-  'farmafacil.loja06@hotmail.com',
-  crypt('FarmaFacil@2026', gen_salt('bf')),
-  now(), 'authenticated', 'authenticated',
-  '{"provider":"email","providers":["email"]}', '{}',
-  false, now(), now(), '', ''
-) ON CONFLICT (email) DO NOTHING;
+  -- Store user 4 — loja04
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'farmafacil.loja06@hotmail.com') THEN
+    INSERT INTO auth.users (
+      id, instance_id, email, encrypted_password, email_confirmed_at,
+      aud, role, raw_app_meta_data, raw_user_meta_data,
+      is_super_admin, created_at, updated_at, confirmation_token, recovery_token
+    ) VALUES (
+      'b1000000-0000-0000-0000-000000000004',
+      '00000000-0000-0000-0000-000000000000',
+      'farmafacil.loja06@hotmail.com',
+      crypt('FarmaFacil@2026', gen_salt('bf')),
+      now(), 'authenticated', 'authenticated',
+      '{"provider":"email","providers":["email"]}', '{}',
+      false, now(), now(), '', ''
+    );
+  END IF;
 
-INSERT INTO auth.identities (
-  id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
-) VALUES (
-  'b1000000-0000-0000-0000-000000000004',
-  'b1000000-0000-0000-0000-000000000004',
-  jsonb_build_object('sub', 'b1000000-0000-0000-0000-000000000004', 'email', 'farmafacil.loja06@hotmail.com'),
-  'email', 'b1000000-0000-0000-0000-000000000004',
-  now(), now(), now()
-) ON CONFLICT (provider, provider_id) DO NOTHING;
+  IF NOT EXISTS (SELECT 1 FROM auth.identities WHERE user_id = 'b1000000-0000-0000-0000-000000000004' AND provider = 'email') THEN
+    INSERT INTO auth.identities (
+      id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
+    ) VALUES (
+      'b1000000-0000-0000-0000-000000000004',
+      'b1000000-0000-0000-0000-000000000004',
+      jsonb_build_object('sub', 'b1000000-0000-0000-0000-000000000004', 'email', 'farmafacil.loja06@hotmail.com'),
+      'email', 'b1000000-0000-0000-0000-000000000004',
+      now(), now(), now()
+    );
+  END IF;
 
--- Store user 5 — loja05
-INSERT INTO auth.users (
-  id, instance_id, email, encrypted_password, email_confirmed_at,
-  aud, role, raw_app_meta_data, raw_user_meta_data,
-  is_super_admin, created_at, updated_at, confirmation_token, recovery_token
-) VALUES (
-  'b1000000-0000-0000-0000-000000000005',
-  '00000000-0000-0000-0000-000000000000',
-  'farmafacil.loja05@hotmail.com',
-  crypt('FarmaFacil@2026', gen_salt('bf')),
-  now(), 'authenticated', 'authenticated',
-  '{"provider":"email","providers":["email"]}', '{}',
-  false, now(), now(), '', ''
-) ON CONFLICT (email) DO NOTHING;
+  -- Store user 5 — loja05
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'farmafacil.loja05@hotmail.com') THEN
+    INSERT INTO auth.users (
+      id, instance_id, email, encrypted_password, email_confirmed_at,
+      aud, role, raw_app_meta_data, raw_user_meta_data,
+      is_super_admin, created_at, updated_at, confirmation_token, recovery_token
+    ) VALUES (
+      'b1000000-0000-0000-0000-000000000005',
+      '00000000-0000-0000-0000-000000000000',
+      'farmafacil.loja05@hotmail.com',
+      crypt('FarmaFacil@2026', gen_salt('bf')),
+      now(), 'authenticated', 'authenticated',
+      '{"provider":"email","providers":["email"]}', '{}',
+      false, now(), now(), '', ''
+    );
+  END IF;
 
-INSERT INTO auth.identities (
-  id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
-) VALUES (
-  'b1000000-0000-0000-0000-000000000005',
-  'b1000000-0000-0000-0000-000000000005',
-  jsonb_build_object('sub', 'b1000000-0000-0000-0000-000000000005', 'email', 'farmafacil.loja05@hotmail.com'),
-  'email', 'b1000000-0000-0000-0000-000000000005',
-  now(), now(), now()
-) ON CONFLICT (provider, provider_id) DO NOTHING;
+  IF NOT EXISTS (SELECT 1 FROM auth.identities WHERE user_id = 'b1000000-0000-0000-0000-000000000005' AND provider = 'email') THEN
+    INSERT INTO auth.identities (
+      id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
+    ) VALUES (
+      'b1000000-0000-0000-0000-000000000005',
+      'b1000000-0000-0000-0000-000000000005',
+      jsonb_build_object('sub', 'b1000000-0000-0000-0000-000000000005', 'email', 'farmafacil.loja05@hotmail.com'),
+      'email', 'b1000000-0000-0000-0000-000000000005',
+      now(), now(), now()
+    );
+  END IF;
 
--- Admin user
-INSERT INTO auth.users (
-  id, instance_id, email, encrypted_password, email_confirmed_at,
-  aud, role, raw_app_meta_data, raw_user_meta_data,
-  is_super_admin, created_at, updated_at, confirmation_token, recovery_token
-) VALUES (
-  'b1000000-0000-0000-0000-000000000099',
-  '00000000-0000-0000-0000-000000000000',
-  'rh.farmafácil@gmail.com',
-  crypt('FarmaFacilAdmin@2026', gen_salt('bf')),
-  now(), 'authenticated', 'authenticated',
-  '{"provider":"email","providers":["email"]}', '{}',
-  false, now(), now(), '', ''
-) ON CONFLICT (email) DO NOTHING;
+  -- Admin user
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'rh.farmafácil@gmail.com') THEN
+    INSERT INTO auth.users (
+      id, instance_id, email, encrypted_password, email_confirmed_at,
+      aud, role, raw_app_meta_data, raw_user_meta_data,
+      is_super_admin, created_at, updated_at, confirmation_token, recovery_token
+    ) VALUES (
+      'b1000000-0000-0000-0000-000000000099',
+      '00000000-0000-0000-0000-000000000000',
+      'rh.farmafácil@gmail.com',
+      crypt('FarmaFacilAdmin@2026', gen_salt('bf')),
+      now(), 'authenticated', 'authenticated',
+      '{"provider":"email","providers":["email"]}', '{}',
+      false, now(), now(), '', ''
+    );
+  END IF;
 
-INSERT INTO auth.identities (
-  id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
-) VALUES (
-  'b1000000-0000-0000-0000-000000000099',
-  'b1000000-0000-0000-0000-000000000099',
-  jsonb_build_object('sub', 'b1000000-0000-0000-0000-000000000099', 'email', 'rh.farmafácil@gmail.com'),
-  'email', 'b1000000-0000-0000-0000-000000000099',
-  now(), now(), now()
-) ON CONFLICT (provider, provider_id) DO NOTHING;
+  IF NOT EXISTS (SELECT 1 FROM auth.identities WHERE user_id = 'b1000000-0000-0000-0000-000000000099' AND provider = 'email') THEN
+    INSERT INTO auth.identities (
+      id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
+    ) VALUES (
+      'b1000000-0000-0000-0000-000000000099',
+      'b1000000-0000-0000-0000-000000000099',
+      jsonb_build_object('sub', 'b1000000-0000-0000-0000-000000000099', 'email', 'rh.farmafácil@gmail.com'),
+      'email', 'b1000000-0000-0000-0000-000000000099',
+      now(), now(), now()
+    );
+  END IF;
+END $$;
 
 -- ============================================
 -- 3. INSERT PROFILES (link auth users → stores/roles)
