@@ -52,26 +52,29 @@ As migrations estão em `supabase/migrations/`. Execute-as no SQL Editor do Supa
 
 ```
 supabase/migrations/
-├── 00001_initial_schema.sql     → Tabelas principais
-├── 00002_rls_policies.sql       → Políticas de Row Level Security
-├── 00003_storage.sql            → Buckets de storage para fotos
-└── 00004_functions.sql          → Funções auxiliares
+├── 001_create_tables.sql     → Tabelas principais + índices
+├── 002_rls_policies.sql      → Políticas de Row Level Security
+├── 003_storage.sql           → Bucket de storage para fotos
+└── 004_seed_users.sql        → Lojas, usuários auth e profiles
 ```
 
 ### 3. Executar Seed (Dados Iniciais)
 
-O arquivo `supabase/seed.ts` cria os dados iniciais do sistema:
+A migration `004_seed_users.sql` já cria todos os dados iniciais via SQL puro:
 
 - 5 lojas com seus respectivos usuários
 - 1 usuário administrador
+- Profiles vinculando cada usuário ao seu role
 
-Para executar:
+Basta executar a migration no SQL Editor junto com as demais.
+
+**Alternativa** (via script Node.js):
 
 ```bash
 npx tsx supabase/seed.ts
 ```
 
-> O seed utiliza a `SUPABASE_SERVICE_ROLE_KEY` para criar usuários via API admin.
+> O script requer `SUPABASE_SERVICE_ROLE_KEY` no `.env.local`.
 
 ### 4. Configurar Storage
 

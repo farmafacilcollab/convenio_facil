@@ -97,28 +97,43 @@ Configura o bucket de storage para fotos das vendas:
 
 **Execute** no SQL Editor.
 
+### Migration 4 — Seed de Usuários (`004_seed_users.sql`)
+
+Cria todas as lojas, usuários auth e profiles diretamente via SQL (sem precisar do script Node.js):
+
+- **5 lojas** na tabela `stores` (com UUIDs determinísticos)
+- **6 usuários** em `auth.users` com senhas hash bcrypt (5 lojas + 1 admin)
+- **6 registros** em `auth.identities` (provider email)
+- **6 profiles** vinculando cada usuário ao seu role e loja
+
+Todos os inserts usam `ON CONFLICT DO NOTHING`, então é seguro executar mais de uma vez.
+
+**Execute** no SQL Editor.
+
 ---
 
-## 4. Popular Dados Iniciais (Seed)
+## 4. Popular Dados Iniciais
 
-O seed cria os usuários e lojas iniciais:
+### Opção A — Via Migration SQL (recomendado)
+
+Basta executar a migration `004_seed_users.sql` no SQL Editor do Supabase junto com as demais migrations. Nenhum passo adicional é necessário.
+
+### Opção B — Via Script Node.js (alternativa)
+
+Se preferir usar a API admin do Supabase:
 
 ```bash
 npx tsx supabase/seed.ts
 ```
 
-### O que o seed faz:
+O seed faz o mesmo que a migration 004, mas via API:
 
-1. **Insere 5 lojas** na tabela `stores` (upsert por CNPJ, sem duplicatas).
+1. **Insere 5 lojas** na tabela `stores` (upsert por CNPJ).
 2. **Cria 5 usuários auth** no Supabase Auth (um por loja).
 3. **Cria 5 profiles** vinculando cada usuário à sua loja (role: `store`).
 4. **Cria 1 usuário admin** + profile (role: `admin`).
 
-> Se algum usuário já existir (mesmo e-mail), o seed trata o erro e segue adiante.
-
-### Requisito
-
-O seed usa a `SUPABASE_SERVICE_ROLE_KEY` para criar usuários via API admin do Supabase. Certifique-se de que o `.env.local` está configurado antes de rodar.
+> Requer `SUPABASE_SERVICE_ROLE_KEY` configurada no `.env.local`.
 
 ---
 
