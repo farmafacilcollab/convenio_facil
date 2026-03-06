@@ -15,6 +15,7 @@ import { StepPhotos } from "./steps/StepPhotos";
 import { StepReview } from "./steps/StepReview";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
 import { ptBR } from "@/lib/i18n/pt-BR";
 import type { Convenio, Conveniado } from "@/lib/types/app.types";
 
@@ -34,6 +35,7 @@ export function SaleWizard() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [successSaleId, setSuccessSaleId] = useState<string | null>(null);
 
   // Form state
   const [selectedConvenio, setSelectedConvenio] = useState<Convenio | null>(null);
@@ -48,7 +50,7 @@ export function SaleWizard() {
   const imageCount = isInstallment && installmentCount ? installmentCount : 1;
   const imageCapture = useImageCapture(imageCount);
 
-  const isDirty = currentStep > 0;
+  const isDirty = currentStep > 0 && !successSaleId;
 
   const handleConvenioSelect = useCallback(
     (convenio: Convenio) => {
@@ -128,9 +130,8 @@ export function SaleWizard() {
       }
 
       imageCapture.cleanup();
-      setCurrentStep(0);
+      setSuccessSaleId(result.saleId!);
       toast.success(ptBR.saleSuccess);
-      window.location.href = `/store/sales/${result.saleId}`;
     } catch (err: unknown) {
       console.error("Sale submission error:", err);
       toast.error(ptBR.saleError);
@@ -138,6 +139,32 @@ export function SaleWizard() {
       setSubmitting(false);
     }
   };
+
+  if (successSaleId) {
+    return (
+      <div className="mx-auto max-w-lg space-y-6">
+        <Card className="shadow-subtle">
+          <CardContent className="flex flex-col items-center gap-4 py-10">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-green-600"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <h3 className="text-lg font-semibold">Venda registrada com sucesso!</h3>
+            <p className="text-center text-sm text-muted-foreground">
+              A venda foi salva e a imagem da requisição foi enviada.
+            </p>
+            <div className="flex w-full flex-col gap-3 pt-2">
+              <a href={`/store/sales/${successSaleId}`}>
+                <Button size="lg" className="w-full">Ver Detalhes</Button>
+              </a>
+              <a href="/store/sales/new">
+                <Button variant="outline" size="lg" className="w-full">Nova Venda</Button>
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
