@@ -172,7 +172,7 @@ BEGIN
   END IF;
 
   -- Admin user
-  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'rh.farmafácil@gmail.com') THEN
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'rh.farmafacil@gmail.com') THEN
     INSERT INTO auth.users (
       id, instance_id, email, encrypted_password, email_confirmed_at,
       aud, role, raw_app_meta_data, raw_user_meta_data,
@@ -180,7 +180,7 @@ BEGIN
     ) VALUES (
       'b1000000-0000-0000-0000-000000000099',
       '00000000-0000-0000-0000-000000000000',
-      'rh.farmafácil@gmail.com',
+      'rh.farmafacil@gmail.com',
       crypt('FarmaFacilAdmin@2026', gen_salt('bf')),
       now(), 'authenticated', 'authenticated',
       '{"provider":"email","providers":["email"]}', '{}',
@@ -194,7 +194,7 @@ BEGIN
     ) VALUES (
       'b1000000-0000-0000-0000-000000000099',
       'b1000000-0000-0000-0000-000000000099',
-      jsonb_build_object('sub', 'b1000000-0000-0000-0000-000000000099', 'email', 'rh.farmafácil@gmail.com'),
+      jsonb_build_object('sub', 'b1000000-0000-0000-0000-000000000099', 'email', 'rh.farmafacil@gmail.com'),
       'email', 'b1000000-0000-0000-0000-000000000099',
       now(), now(), now()
     );
@@ -210,5 +210,5 @@ INSERT INTO public.profiles (id, email, role, store_id) VALUES
   ('b1000000-0000-0000-0000-000000000003', 'farmafacil.loja03@hotmail.com', 'store', 'a1000000-0000-0000-0000-000000000003'),
   ('b1000000-0000-0000-0000-000000000004', 'farmafacil.loja06@hotmail.com', 'store', 'a1000000-0000-0000-0000-000000000004'),
   ('b1000000-0000-0000-0000-000000000005', 'farmafacil.loja05@hotmail.com', 'store', 'a1000000-0000-0000-0000-000000000005'),
-  ('b1000000-0000-0000-0000-000000000099', 'rh.farmafácil@gmail.com',       'admin', NULL)
+  ('b1000000-0000-0000-0000-000000000099', 'rh.farmafacil@gmail.com',       'admin', NULL)
 ON CONFLICT (id) DO NOTHING;

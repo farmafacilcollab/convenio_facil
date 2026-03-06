@@ -53,7 +53,7 @@ const STORES = [
 ];
 
 const STORE_PASSWORD = "FarmaFacil@2026";
-const ADMIN_EMAIL = "rh.farmafácil@gmail.com";
+const ADMIN_EMAIL = "rh.farmafacil@gmail.com";
 const ADMIN_PASSWORD = "FarmaFacilAdmin@2026";
 
 async function seed() {

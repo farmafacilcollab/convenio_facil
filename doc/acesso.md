@@ -28,7 +28,7 @@ Todas as lojas possuem a **mesma senha padrão**: `FarmaFacil@2026`
 
 | Campo | Valor |
 |-------|-------|
-| E-mail | rh.farmafácil@gmail.com |
+| E-mail | rh.farmafacil@gmail.com |
 | Senha | FarmaFacilAdmin@2026 |
 
 ---
