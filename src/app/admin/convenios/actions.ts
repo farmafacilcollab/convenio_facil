@@ -4,6 +4,22 @@ import { createClient } from "@/lib/supabase/server";
 import { convenioSchema } from "@/lib/validations/convenio.schema";
 import { unmaskCNPJ } from "@/lib/utils/cnpj";
 import { revalidatePath } from "next/cache";
+import type { Convenio } from "@/lib/types/app.types";
+
+export async function fetchConveniosAdmin(showInactive: boolean): Promise<Convenio[]> {
+  const supabase = await createClient();
+  let query = supabase
+    .from("convenios")
+    .select("*")
+    .order("company_name", { ascending: true });
+
+  if (!showInactive) {
+    query = query.eq("active", true);
+  }
+
+  const { data } = await query;
+  return data ?? [];
+}
 
 export async function createConvenio(formData: {
   company_name: string;

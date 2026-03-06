@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState, useEffect, useCallback } from "react";
 import type { Conveniado, Convenio } from "@/lib/types/app.types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,8 @@ import {
 import { ConveniadoForm } from "@/components/forms/ConveniadoForm";
 import type { ConveniadoFormData } from "@/lib/validations/conveniado.schema";
 import {
+  fetchConveniadosAdmin,
+  fetchConveniosList,
   createConveniado,
   updateConveniado,
   toggleConveniadoActive,
@@ -47,37 +48,14 @@ export default function ConveniadosPage() {
   const [editItem, setEditItem] = useState<Conveniado | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const supabaseRef = useRef(createClient());
-
   const fetchConvenios = useCallback(async () => {
-    const { data } = await supabaseRef.current
-      .from("convenios")
-      .select("id, company_name")
-      .eq("active", true)
-      .order("company_name");
-    setConvenios(data ?? []);
+    const data = await fetchConveniosList();
+    setConvenios(data);
   }, []);
 
   const fetchConveniados = useCallback(async () => {
-    let query = supabaseRef.current
-      .from("conveniados")
-      .select("*, convenio:convenios(company_name)")
-      .order("full_name", { ascending: true });
-
-    if (!showInactive) {
-      query = query.eq("active", true);
-    }
-    if (filterConvenio !== "all") {
-      query = query.eq("convenio_id", filterConvenio);
-    }
-
-    const { data } = await query;
-    setConveniados(
-      (data ?? []).map((d) => ({
-        ...d,
-        convenio: Array.isArray(d.convenio) ? d.convenio[0] ?? null : d.convenio,
-      }))
-    );
+    const data = await fetchConveniadosAdmin({ showInactive, filterConvenio });
+    setConveniados(data);
   }, [showInactive, filterConvenio]);
 
   useEffect(() => {

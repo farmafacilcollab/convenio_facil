@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState, useEffect, useCallback } from "react";
 import type { Convenio } from "@/lib/types/app.types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +16,7 @@ import {
 import { ConvenioForm } from "@/components/forms/ConvenioForm";
 import type { ConvenioFormData } from "@/lib/validations/convenio.schema";
 import {
+  fetchConveniosAdmin,
   createConvenio,
   updateConvenio,
   toggleConvenioActive,
@@ -34,20 +34,9 @@ export default function ConveniosPage() {
   const [editItem, setEditItem] = useState<Convenio | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const supabaseRef = useRef(createClient());
-
   const fetchConvenios = useCallback(async () => {
-    let query = supabaseRef.current
-      .from("convenios")
-      .select("*")
-      .order("company_name", { ascending: true });
-
-    if (!showInactive) {
-      query = query.eq("active", true);
-    }
-
-    const { data } = await query;
-    setConvenios(data ?? []);
+    const data = await fetchConveniosAdmin(showInactive);
+    setConvenios(data);
   }, [showInactive]);
 
   useEffect(() => {

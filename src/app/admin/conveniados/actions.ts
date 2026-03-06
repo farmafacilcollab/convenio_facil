@@ -3,6 +3,41 @@
 import { createClient } from "@/lib/supabase/server";
 import { conveniadoSchema } from "@/lib/validations/conveniado.schema";
 import { revalidatePath } from "next/cache";
+import type { Conveniado, Convenio } from "@/lib/types/app.types";
+
+export async function fetchConveniadosAdmin(opts: {
+  showInactive: boolean;
+  filterConvenio: string;
+}): Promise<(Conveniado & { convenio: Pick<Convenio, "company_name"> | null })[]> {
+  const supabase = await createClient();
+  let query = supabase
+    .from("conveniados")
+    .select("*, convenio:convenios(company_name)")
+    .order("full_name", { ascending: true });
+
+  if (!opts.showInactive) {
+    query = query.eq("active", true);
+  }
+  if (opts.filterConvenio !== "all") {
+    query = query.eq("convenio_id", opts.filterConvenio);
+  }
+
+  const { data } = await query;
+  return (data ?? []).map((d) => ({
+    ...d,
+    convenio: Array.isArray(d.convenio) ? d.convenio[0] ?? null : d.convenio,
+  }));
+}
+
+export async function fetchConveniosList(): Promise<Pick<Convenio, "id" | "company_name">[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("convenios")
+    .select("id, company_name")
+    .eq("active", true)
+    .order("company_name");
+  return data ?? [];
+}
 
 export async function createConveniado(formData: {
   full_name: string;
