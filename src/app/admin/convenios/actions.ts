@@ -101,7 +101,7 @@ export async function importConvenios(
   let errors = 0;
 
   for (const row of rows) {
-    const cnpj = row.cnpj.replace(/\D/g, "");
+    const cnpj = (row.cnpj ?? "").replace(/\D/g, "");
     const { error } = await supabase.from("convenios").upsert(
       {
         company_name: row.company_name.trim(),

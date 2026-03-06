@@ -90,7 +90,7 @@ export async function fetchExportData(
 
   const exportData: ExportData = {
     convenioName: convenio.company_name,
-    convenioCnpj: formatCNPJ(convenio.cnpj),
+    convenioCnpj: convenio.cnpj ? formatCNPJ(convenio.cnpj) : "Não informado",
     dateFrom: format(new Date(dateFrom + "T12:00:00"), "dd/MM/yyyy", {
       locale: datePtBR,
     }),

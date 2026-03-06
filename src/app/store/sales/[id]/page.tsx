@@ -97,7 +97,7 @@ export default async function SaleDetailPage({
                 {convenio?.company_name ?? "—"}
                 <br />
                 <span className="text-xs text-muted-foreground">
-                  {convenio ? formatCNPJ(convenio.cnpj) : ""}
+                  {convenio?.cnpj ? formatCNPJ(convenio.cnpj) : ""}
                 </span>
               </span>
             </div>

@@ -21,7 +21,7 @@ export function StepConvenio({ convenios, isLoading, selected, onSelect }: Props
   const filtered = convenios.filter(
     (c) =>
       c.company_name.toLowerCase().includes(search.toLowerCase()) ||
-      c.cnpj.includes(search.replace(/\D/g, ""))
+      (c.cnpj ?? "").includes(search.replace(/\D/g, ""))
   );
 
   if (isLoading) {
@@ -62,7 +62,7 @@ export function StepConvenio({ convenios, isLoading, selected, onSelect }: Props
               <CardContent className="py-3">
                 <p className="text-sm font-medium">{convenio.company_name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {formatCNPJ(convenio.cnpj)}
+                  {convenio.cnpj ? formatCNPJ(convenio.cnpj) : "CNPJ não informado"}
                 </p>
               </CardContent>
             </Card>

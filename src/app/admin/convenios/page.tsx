@@ -61,7 +61,7 @@ export default function ConveniosPage() {
   const filtered = convenios.filter(
     (c) =>
       c.company_name.toLowerCase().includes(search.toLowerCase()) ||
-      c.cnpj.includes(search.replace(/\D/g, ""))
+      (c.cnpj ?? "").includes(search.replace(/\D/g, ""))
   );
 
   const handleCreate = async (data: ConvenioFormData) => {
@@ -161,7 +161,7 @@ export default function ConveniosPage() {
                 <div>
                   <p className="font-medium">{c.company_name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatCNPJ(c.cnpj)}
+                    {c.cnpj ? formatCNPJ(c.cnpj) : "CNPJ não informado"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -199,7 +199,7 @@ export default function ConveniosPage() {
             <ConvenioForm
               defaultValues={{
                 company_name: editItem.company_name,
-                cnpj: editItem.cnpj,
+                cnpj: editItem.cnpj ?? "",
               }}
               onSubmit={handleUpdate}
               isLoading={isLoading}
