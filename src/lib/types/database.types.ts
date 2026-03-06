@@ -78,7 +78,7 @@ export interface Database {
         Row: {
           id: string;
           company_name: string;
-          cnpj: string;
+          cnpj: string | null;
           active: boolean;
           metadata: Json;
           created_at: string;
@@ -87,7 +87,7 @@ export interface Database {
         Insert: {
           id?: string;
           company_name: string;
-          cnpj: string;
+          cnpj?: string | null;
           active?: boolean;
           metadata?: Json;
           created_at?: string;
@@ -96,7 +96,7 @@ export interface Database {
         Update: {
           id?: string;
           company_name?: string;
-          cnpj?: string;
+          cnpj?: string | null;
           active?: boolean;
           metadata?: Json;
           created_at?: string;

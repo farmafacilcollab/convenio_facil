@@ -27,3 +27,14 @@ export const conveniadoImportRowSchema = z.object({
   convenio_cnpj: z.string().optional(),
   convenio_name: z.string().optional(),
 });
+
+// XLSX import row schema
+export const xlsxImportRowSchema = z.object({
+  convenio_name: z.string().min(1, "Nome do convênio é obrigatório"),
+  full_name: z.string().min(2, "Nome completo é obrigatório"),
+  cpf: z.string().refine((val) => validateCPF(val.replace(/\D/g, "")), {
+    message: "CPF inválido",
+  }),
+});
+
+export type XlsxImportRow = z.infer<typeof xlsxImportRowSchema>;
