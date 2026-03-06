@@ -32,7 +32,9 @@ type Step = "upload" | "preview" | "result";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_ROWS = 5000;
-const ACCEPTED_EXTENSIONS = [".xlsx", ".xls"];
+const ACCEPTED_EXTENSIONS = [".xlsx", ".xls", ".txt"];
+
+const CPF_REGEX = /\d{3}\.\d{3}\.\d{3}-\d{2}/;
 
 function normalizeForCompare(value: string): string {
   return value
@@ -40,6 +42,76 @@ function normalizeForCompare(value: string): string {
     .toUpperCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+}
+
+/**
+ * Parser para relatório TXT do WebPharma (formato fixo).
+ * Extrai convênio, nomes e CPFs das linhas do relatório.
+ */
+function parseTxtWebPharma(text: string): {
+  convenioName: string;
+  rows: ValidRow[];
+  ignored: number;
+} {
+  const lines = text.split(/\r?\n/);
+  let convenioName = "";
+  const rows: ValidRow[] = [];
+  let ignored = 0;
+  const seenCpfs = new Set<string>();
+
+  for (const line of lines) {
+    const trimmed = line.trimEnd();
+
+    // Ignorar linhas vazias, separadores e cabeçalhos do relatório
+    if (!trimmed) continue;
+    if (/^[=\-]{4,}/.test(trimmed)) continue;
+    if (/^\s*Nome\s+Situacao/i.test(trimmed)) continue;
+    if (/PAG\.:|DATA:|HORA:|WEBPHARMA|ALRUSUAR/i.test(trimmed)) continue;
+    if (/^\s*Nascim\s+CPF/i.test(trimmed)) continue;
+    if (/Registros Listados/i.test(trimmed)) continue;
+
+    // Detectar linha do convênio: não indentada, contém "ATIVO" e dados financeiros
+    if (!trimmed.startsWith(" ") && /\bATIVO\b/i.test(trimmed) && !CPF_REGEX.test(trimmed)) {
+      const name = trimmed.split(/\s{2,}/)[0].trim();
+      if (name && !convenioName) {
+        convenioName = name;
+      }
+      continue;
+    }
+
+    // Detectar linhas de conveniados: contém CPF no formato XXX.XXX.XXX-XX
+    const cpfMatch = trimmed.match(CPF_REGEX);
+    if (cpfMatch) {
+      const cpfFormatted = cpfMatch[0];
+      const cpfRaw = cpfFormatted.replace(/\D/g, "");
+
+      // Extrair nome: texto antes de "ATIVO", removendo indentação
+      const ativoIdx = trimmed.indexOf("ATIVO");
+      const fullName = ativoIdx > 0
+        ? trimmed.substring(0, ativoIdx).trim()
+        : trimmed.substring(0, trimmed.indexOf(cpfFormatted)).trim();
+
+      if (!validateCPF(cpfRaw)) {
+        ignored++;
+        continue;
+      }
+
+      if (fullName.length < 2) {
+        ignored++;
+        continue;
+      }
+
+      if (seenCpfs.has(cpfRaw)) {
+        ignored++;
+        continue;
+      }
+      seenCpfs.add(cpfRaw);
+
+      rows.push({ full_name: fullName, cpf: cpfRaw });
+    }
+  }
+
+  return { convenioName, rows, ignored };
 }
 
 export default function ImportConveniadosXlsxPage() {
@@ -73,126 +145,155 @@ export default function ImportConveniadosXlsxPage() {
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  const processFile = useCallback((file: File) => {
-    // Validar extensão
-    const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
-    if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-      toast.error(ptBR.xlsxErrorInvalidFile);
-      return;
-    }
+  const applyParsedData = useCallback(
+    (convenio: string, valid: ValidRow[], ignored: number) => {
+      setValidRows(valid);
+      setIgnoredCount(ignored);
+      setConvenioName(convenio);
+      setStep("preview");
 
-    // Validar tamanho
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error(ptBR.xlsxErrorFileSize);
-      return;
-    }
+      previewSyncConveniados(valid, convenio).then((res) => {
+        if ("error" in res) return;
+        setConvenioFound(res.convenioFound);
+      });
+    },
+    []
+  );
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const data = new Uint8Array(ev.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
+  const processXlsx = useCallback(
+    (buffer: ArrayBuffer) => {
+      const data = new Uint8Array(buffer);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
 
-        // Ler como array de arrays (raw), incluindo header
-        const rawData: unknown[][] = XLSX.utils.sheet_to_json(sheet, {
-          header: 1,
-          defval: "",
-        });
+      const rawData: unknown[][] = XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        defval: "",
+      });
 
-        if (rawData.length < 2) {
-          toast.error(ptBR.xlsxErrorNoData);
-          return;
-        }
-
-        // Remover header (primeira linha)
-        const dataRows = rawData.slice(1).filter((row) => {
-          // Ignorar linhas completamente vazias
-          return row.some((cell) => String(cell ?? "").trim() !== "");
-        });
-
-        if (dataRows.length === 0) {
-          toast.error(ptBR.xlsxErrorNoData);
-          return;
-        }
-
-        if (dataRows.length > MAX_ROWS) {
-          toast.error(ptBR.xlsxErrorMaxRows);
-          return;
-        }
-
-        // Detectar convênio da primeira linha de dados (Coluna A)
-        const firstConvenio = normalizeForCompare(String(dataRows[0][0] ?? ""));
-        if (!firstConvenio) {
-          toast.error(ptBR.xlsxErrorNoData);
-          return;
-        }
-
-        // Validar que todas as linhas têm o mesmo convênio
-        for (let i = 0; i < dataRows.length; i++) {
-          const rowConvenio = normalizeForCompare(String(dataRows[i][0] ?? ""));
-          if (rowConvenio && rowConvenio !== firstConvenio) {
-            toast.error(ptBR.xlsxErrorMultipleConvenios);
-            return;
-          }
-        }
-
-        // Processar linhas: ler apenas colunas A (convênio), B (nome), C (CPF)
-        const valid: ValidRow[] = [];
-        let ignored = 0;
-        const seenCpfs = new Set<string>();
-
-        for (const row of dataRows) {
-          const fullName = String(row[1] ?? "").trim();
-          const cpfRaw = String(row[2] ?? "").replace(/\D/g, "");
-
-          // Validar CPF
-          if (!cpfRaw || !validateCPF(cpfRaw)) {
-            ignored++;
-            continue;
-          }
-
-          // Nome mínimo
-          if (fullName.length < 2) {
-            ignored++;
-            continue;
-          }
-
-          // Deduplicar CPFs
-          if (seenCpfs.has(cpfRaw)) {
-            ignored++;
-            continue;
-          }
-          seenCpfs.add(cpfRaw);
-
-          valid.push({ full_name: fullName, cpf: cpfRaw });
-        }
-
-        if (valid.length === 0) {
-          toast.error(ptBR.xlsxErrorNoData);
-          return;
-        }
-
-        // Usar o nome original (não normalizado) para exibição
-        const originalConvenioName = String(dataRows[0][0] ?? "").trim();
-
-        setValidRows(valid);
-        setIgnoredCount(ignored);
-        setConvenioName(originalConvenioName);
-        setStep("preview");
-
-        // Verificar se convênio existe (via preview)
-        previewSyncConveniados(valid, originalConvenioName).then((res) => {
-          if ("error" in res) return;
-          setConvenioFound(res.convenioFound);
-        });
-      } catch {
-        toast.error(ptBR.xlsxErrorParsing);
+      if (rawData.length < 2) {
+        toast.error(ptBR.xlsxErrorNoData);
+        return;
       }
-    };
-    reader.readAsArrayBuffer(file);
-  }, []);
+
+      const dataRows = rawData.slice(1).filter((row) =>
+        row.some((cell) => String(cell ?? "").trim() !== "")
+      );
+
+      if (dataRows.length === 0) {
+        toast.error(ptBR.xlsxErrorNoData);
+        return;
+      }
+
+      if (dataRows.length > MAX_ROWS) {
+        toast.error(ptBR.xlsxErrorMaxRows);
+        return;
+      }
+
+      const firstConvenio = normalizeForCompare(String(dataRows[0][0] ?? ""));
+      if (!firstConvenio) {
+        toast.error(ptBR.xlsxErrorNoData);
+        return;
+      }
+
+      for (let i = 0; i < dataRows.length; i++) {
+        const rowConvenio = normalizeForCompare(String(dataRows[i][0] ?? ""));
+        if (rowConvenio && rowConvenio !== firstConvenio) {
+          toast.error(ptBR.xlsxErrorMultipleConvenios);
+          return;
+        }
+      }
+
+      const valid: ValidRow[] = [];
+      let ignored = 0;
+      const seenCpfs = new Set<string>();
+
+      for (const row of dataRows) {
+        const fullName = String(row[1] ?? "").trim();
+        const cpfRaw = String(row[2] ?? "").replace(/\D/g, "");
+
+        if (!cpfRaw || !validateCPF(cpfRaw)) { ignored++; continue; }
+        if (fullName.length < 2) { ignored++; continue; }
+        if (seenCpfs.has(cpfRaw)) { ignored++; continue; }
+        seenCpfs.add(cpfRaw);
+
+        valid.push({ full_name: fullName, cpf: cpfRaw });
+      }
+
+      if (valid.length === 0) {
+        toast.error(ptBR.xlsxErrorNoData);
+        return;
+      }
+
+      const originalConvenioName = String(dataRows[0][0] ?? "").trim();
+      applyParsedData(originalConvenioName, valid, ignored);
+    },
+    [applyParsedData]
+  );
+
+  const processTxt = useCallback(
+    (text: string) => {
+      const { convenioName: name, rows, ignored } = parseTxtWebPharma(text);
+
+      if (!name) {
+        toast.error(ptBR.xlsxErrorNoData);
+        return;
+      }
+
+      if (rows.length === 0) {
+        toast.error(ptBR.xlsxErrorNoData);
+        return;
+      }
+
+      if (rows.length > MAX_ROWS) {
+        toast.error(ptBR.xlsxErrorMaxRows);
+        return;
+      }
+
+      applyParsedData(name, rows, ignored);
+    },
+    [applyParsedData]
+  );
+
+  const processFile = useCallback(
+    (file: File) => {
+      const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+      if (!ACCEPTED_EXTENSIONS.includes(ext)) {
+        toast.error(ptBR.importErrorInvalidFile);
+        return;
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(ptBR.xlsxErrorFileSize);
+        return;
+      }
+
+      if (ext === ".txt") {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const text = ev.target?.result as string;
+            processTxt(text);
+          } catch {
+            toast.error(ptBR.xlsxErrorParsing);
+          }
+        };
+        reader.readAsText(file, "iso-8859-1");
+      } else {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            processXlsx(ev.target?.result as ArrayBuffer);
+          } catch {
+            toast.error(ptBR.xlsxErrorParsing);
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    },
+    [processXlsx, processTxt]
+  );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -327,7 +428,7 @@ export default function ImportConveniadosXlsxPage() {
             <input
               ref={fileRef}
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx,.xls,.txt"
               onChange={handleFileChange}
               className="hidden"
             />
