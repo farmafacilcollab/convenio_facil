@@ -42,14 +42,28 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user) {
-    // Fetch user profile for role-based routing
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, store_id")
-      .eq("id", user.id)
-      .single();
+    // Read cached role from cookie to avoid DB query on every request
+    const cachedRole = request.cookies.get("x-user-role")?.value as string | undefined;
+    let role = cachedRole;
 
-    const role = profile?.role;
+    if (!role) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, store_id")
+        .eq("id", user.id)
+        .single();
+      role = profile?.role ?? undefined;
+      if (role) {
+        supabaseResponse.cookies.set("x-user-role", role, {
+          path: "/",
+          httpOnly: true,
+          secure: true,
+          sameSite: "lax",
+          maxAge: 60 * 60, // 1 hour
+        });
+      }
+    }
+
     const pathname = request.nextUrl.pathname;
 
     // Redirect authenticated users away from login

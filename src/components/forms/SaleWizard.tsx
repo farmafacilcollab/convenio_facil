@@ -34,6 +34,7 @@ export function SaleWizard() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   // Form state
   const [selectedConvenio, setSelectedConvenio] = useState<Convenio | null>(null);
@@ -48,7 +49,7 @@ export function SaleWizard() {
   const imageCount = isInstallment && installmentCount ? installmentCount : 1;
   const imageCapture = useImageCapture(imageCount);
 
-  const isDirty = currentStep > 0;
+  const isDirty = currentStep > 0 && !submitted;
 
   const handleConvenioSelect = useCallback(
     (convenio: Convenio) => {
@@ -128,6 +129,7 @@ export function SaleWizard() {
       }
 
       imageCapture.cleanup();
+      setSubmitted(true);
       toast.success(ptBR.saleSuccess);
       window.location.href = `/store/sales/${result.saleId}`;
     } catch (err: unknown) {
