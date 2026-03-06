@@ -2,11 +2,11 @@
 
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useConvenios } from "@/hooks/useConvenios";
 import { useConveniados } from "@/hooks/useConveniados";
 import { useImageCapture } from "@/hooks/useImageCapture";
+import { submitSale } from "@/app/store/sales/new/actions";
 import { UnsavedChangesGuard } from "@/components/layout/UnsavedChangesGuard";
 import { StepConvenio } from "./steps/StepConvenio";
 import { StepConveniado } from "./steps/StepConveniado";
@@ -98,88 +98,41 @@ export function SaleWizard() {
 
     setSubmitting(true);
 
-    const doSubmit = async (): Promise<string> => {
-      const supabase = createClient();
-
-      // 1. Get store slug for storage path
-      const { data: store, error: storeErr } = await supabase
-        .from("stores")
-        .select("slug")
-        .eq("id", storeId)
-        .single();
-
-      if (storeErr || !store) throw new Error("Loja não encontrada");
-
-      // 2. Create sale record first to get ID
-      const { data: sale, error: saleError } = await supabase
-        .from("sales")
-        .insert({
-          store_id: storeId,
-          convenio_id: selectedConvenio.id,
-          conveniado_id: selectedConveniado.id,
-          sale_date: saleDate,
-          total_value: totalValue,
-          is_installment: isInstallment,
-          installment_count: installmentCount,
-          created_by: user.id,
-        })
-        .select("id")
-        .single();
-
-      if (saleError || !sale) {
-        throw saleError ?? new Error("Erro ao criar venda");
-      }
-
-      // 3. Upload images
-      for (const img of imageCapture.images) {
-        if (!img) continue;
-        const suffix =
-          img.installment_number !== null
-            ? `req_${img.installment_number}`
-            : "req_single";
-        const path = `${store.slug}/${sale.id}/${suffix}.webp`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("requisitions")
-          .upload(path, img.file, {
-            contentType: "image/webp",
-            upsert: false,
-          });
-
-        if (uploadError) throw uploadError;
-
-        // Insert sale_images record
-        const { error: imgError } = await supabase.from("sale_images").insert({
-          sale_id: sale.id,
-          installment_number: img.installment_number,
-          storage_path: path,
-          file_size_kb: Math.round(img.compressedSize / 1024),
-        });
-
-        if (imgError) throw imgError;
-      }
-
-      return sale.id;
-    };
-
     try {
-      const saleId = await Promise.race([
-        doSubmit(),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("TIMEOUT")), 60_000)
-        ),
-      ]);
+      const fd = new FormData();
+
+      fd.set("data", JSON.stringify({
+        store_id: storeId,
+        convenio_id: selectedConvenio.id,
+        conveniado_id: selectedConveniado.id,
+        sale_date: saleDate,
+        total_value: totalValue,
+        is_installment: isInstallment,
+        installment_count: installmentCount,
+        created_by: user.id,
+      }));
+
+      imageCapture.images.forEach((img, i) => {
+        if (!img) return;
+        fd.set(`file_${i}`, img.file);
+        if (img.installment_number !== null) {
+          fd.set(`installment_${i}`, String(img.installment_number));
+        }
+      });
+
+      const result = await submitSale(fd);
+
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
 
       imageCapture.cleanup();
       toast.success(ptBR.saleSuccess);
-      window.location.href = `/store/sales/${saleId}`;
+      window.location.href = `/store/sales/${result.saleId}`;
     } catch (err: unknown) {
       console.error("Sale submission error:", err);
-      const message =
-        err instanceof Error && err.message === "TIMEOUT"
-          ? "Tempo limite excedido. Verifique sua conexão e tente novamente."
-          : ptBR.saleError;
-      toast.error(message);
+      toast.error(ptBR.saleError);
     } finally {
       setSubmitting(false);
     }
