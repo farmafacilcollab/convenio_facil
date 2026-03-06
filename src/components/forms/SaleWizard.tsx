@@ -99,13 +99,10 @@ export function SaleWizard() {
     if (!storeId || !user || !selectedConvenio || !selectedConveniado) return;
 
     setSubmitting(true);
-    const supabase = createClient();
 
-    // Timeout de segurança: 30 segundos
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30_000);
+    const doSubmit = async (): Promise<string> => {
+      const supabase = createClient();
 
-    try {
       // 1. Get store slug for storage path
       const { data: store, error: storeErr } = await supabase
         .from("stores")
@@ -164,16 +161,25 @@ export function SaleWizard() {
         if (imgError) throw imgError;
       }
 
-      clearTimeout(timeout);
+      return sale.id;
+    };
+
+    try {
+      const saleId = await Promise.race([
+        doSubmit(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("TIMEOUT")), 60_000)
+        ),
+      ]);
+
       imageCapture.cleanup();
       toast.success(ptBR.saleSuccess);
-      router.push(`/store/sales/${sale.id}`);
+      router.push(`/store/sales/${saleId}`);
     } catch (err: unknown) {
-      clearTimeout(timeout);
       console.error("Sale submission error:", err);
       const message =
-        err instanceof DOMException && err.name === "AbortError"
-          ? "Tempo limite excedido. Tente novamente."
+        err instanceof Error && err.message === "TIMEOUT"
+          ? "Tempo limite excedido. Verifique sua conexão e tente novamente."
           : ptBR.saleError;
       toast.error(message);
     } finally {

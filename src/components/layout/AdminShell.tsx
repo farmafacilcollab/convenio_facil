@@ -61,12 +61,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch {
-      // Ignorar erro
-    }
+  const handleSignOut = () => {
+    signOut().catch(() => {});
     window.location.href = "/login";
   };
 

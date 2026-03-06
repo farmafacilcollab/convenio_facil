@@ -36,12 +36,8 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
   const { profile, isLoading, signOut } = useAuth();
   const pathname = usePathname();
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch {
-      // Ignorar erro
-    }
+  const handleSignOut = () => {
+    signOut().catch(() => {});
     window.location.href = "/login";
   };
 
