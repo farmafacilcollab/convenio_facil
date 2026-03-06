@@ -101,15 +101,19 @@ export function SaleWizard() {
     setSubmitting(true);
     const supabase = createClient();
 
+    // Timeout de segurança: 30 segundos
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+
     try {
       // 1. Get store slug for storage path
-      const { data: store } = await supabase
+      const { data: store, error: storeErr } = await supabase
         .from("stores")
         .select("slug")
         .eq("id", storeId)
         .single();
 
-      if (!store) throw new Error("Loja não encontrada");
+      if (storeErr || !store) throw new Error("Loja não encontrada");
 
       // 2. Create sale record first to get ID
       const { data: sale, error: saleError } = await supabase
@@ -127,52 +131,51 @@ export function SaleWizard() {
         .select("id")
         .single();
 
-      if (saleError) throw saleError;
-
-      // 3. Upload images
-      const uploadedPaths: string[] = [];
-      try {
-        for (const img of imageCapture.images) {
-          if (!img) continue;
-          const suffix =
-            img.installment_number !== null
-              ? `req_${img.installment_number}`
-              : "req_single";
-          const path = `${store.slug}/${sale.id}/${suffix}.webp`;
-
-          const { error: uploadError } = await supabase.storage
-            .from("requisitions")
-            .upload(path, img.file, {
-              contentType: "image/webp",
-              upsert: false,
-            });
-
-          if (uploadError) throw uploadError;
-          uploadedPaths.push(path);
-
-          // Insert sale_images record
-          await supabase.from("sale_images").insert({
-            sale_id: sale.id,
-            installment_number: img.installment_number,
-            storage_path: path,
-            file_size_kb: Math.round(img.compressedSize / 1024),
-          });
-        }
-      } catch (uploadErr) {
-        // Rollback: delete sale and uploaded images
-        await supabase.from("sales").delete().eq("id", sale.id);
-        for (const path of uploadedPaths) {
-          await supabase.storage.from("requisitions").remove([path]);
-        }
-        throw uploadErr;
+      if (saleError || !sale) {
+        throw saleError ?? new Error("Erro ao criar venda");
       }
 
+      // 3. Upload images
+      for (const img of imageCapture.images) {
+        if (!img) continue;
+        const suffix =
+          img.installment_number !== null
+            ? `req_${img.installment_number}`
+            : "req_single";
+        const path = `${store.slug}/${sale.id}/${suffix}.webp`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("requisitions")
+          .upload(path, img.file, {
+            contentType: "image/webp",
+            upsert: false,
+          });
+
+        if (uploadError) throw uploadError;
+
+        // Insert sale_images record
+        const { error: imgError } = await supabase.from("sale_images").insert({
+          sale_id: sale.id,
+          installment_number: img.installment_number,
+          storage_path: path,
+          file_size_kb: Math.round(img.compressedSize / 1024),
+        });
+
+        if (imgError) throw imgError;
+      }
+
+      clearTimeout(timeout);
       imageCapture.cleanup();
       toast.success(ptBR.saleSuccess);
       router.push(`/store/sales/${sale.id}`);
-    } catch (err) {
+    } catch (err: unknown) {
+      clearTimeout(timeout);
       console.error("Sale submission error:", err);
-      toast.error(ptBR.saleError);
+      const message =
+        err instanceof DOMException && err.name === "AbortError"
+          ? "Tempo limite excedido. Tente novamente."
+          : ptBR.saleError;
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }

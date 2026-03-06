@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Conveniado } from "@/lib/types/app.types";
 
 export function useConveniados(convenioId?: string) {
   const [conveniados, setConveniados] = useState<Conveniado[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const supabaseRef = useRef(createClient());
 
   const fetchConveniados = useCallback(async (cId?: string) => {
     const id = cId ?? convenioId;
@@ -16,8 +17,7 @@ export function useConveniados(convenioId?: string) {
     }
 
     setIsLoading(true);
-    const supabase = createClient();
-    const { data } = await supabase
+    const { data } = await supabaseRef.current
       .from("conveniados")
       .select("*")
       .eq("convenio_id", id)

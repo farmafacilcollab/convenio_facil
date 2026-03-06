@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Convenio } from "@/lib/types/app.types";
 
 export function useConvenios() {
   const [convenios, setConvenios] = useState<Convenio[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const supabaseRef = useRef(createClient());
 
   const fetchConvenios = useCallback(async () => {
     setIsLoading(true);
-    const supabase = createClient();
-    const { data } = await supabase
+    const { data } = await supabaseRef.current
       .from("convenios")
       .select("*")
       .eq("active", true)

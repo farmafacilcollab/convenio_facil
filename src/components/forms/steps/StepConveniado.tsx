@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ptBR } from "@/lib/i18n/pt-BR";
 import { maskCPFDisplay } from "@/lib/utils/cpf";
 import type { Conveniado } from "@/lib/types/app.types";
+
+const MAX_VISIBLE = 20;
 
 interface Props {
   conveniados: Conveniado[];
@@ -17,12 +19,22 @@ interface Props {
 
 export function StepConveniado({ conveniados, isLoading, selected, onSelect }: Props) {
   const [search, setSearch] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = conveniados.filter(
-    (c) =>
-      c.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      c.cpf.includes(search.replace(/\D/g, ""))
-  );
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (!search) return conveniados;
+    const lower = search.toLowerCase();
+    const digits = search.replace(/\D/g, "");
+    return conveniados.filter(
+      (c) =>
+        c.full_name.toLowerCase().includes(lower) ||
+        (digits && c.cpf.includes(digits))
+    );
+  }, [conveniados, search]);
 
   if (isLoading) {
     return (
@@ -37,6 +49,7 @@ export function StepConveniado({ conveniados, isLoading, selected, onSelect }: P
   return (
     <div className="space-y-4">
       <Input
+        ref={inputRef}
         placeholder={ptBR.searchConveniado}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
@@ -49,24 +62,31 @@ export function StepConveniado({ conveniados, isLoading, selected, onSelect }: P
             {ptBR.noResults}
           </p>
         ) : (
-          filtered.map((conveniado) => (
-            <Card
-              key={conveniado.id}
-              className={`cursor-pointer shadow-subtle transition-all duration-200 hover:shadow-md ${
-                selected?.id === conveniado.id
-                  ? "ring-2 ring-primary"
-                  : ""
-              }`}
-              onClick={() => onSelect(conveniado)}
-            >
-              <CardContent className="py-3">
-                <p className="text-sm font-medium">{conveniado.full_name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {maskCPFDisplay(conveniado.cpf)}
-                </p>
-              </CardContent>
-            </Card>
-          ))
+          <>
+            {filtered.slice(0, MAX_VISIBLE).map((conveniado) => (
+              <Card
+                key={conveniado.id}
+                className={`cursor-pointer shadow-subtle transition-all duration-150 hover:shadow-md ${
+                  selected?.id === conveniado.id
+                    ? "ring-2 ring-primary"
+                    : ""
+                }`}
+                onClick={() => onSelect(conveniado)}
+              >
+                <CardContent className="py-3">
+                  <p className="text-sm font-medium">{conveniado.full_name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {maskCPFDisplay(conveniado.cpf)}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+            {filtered.length > MAX_VISIBLE && (
+              <p className="py-2 text-center text-xs text-muted-foreground">
+                Digite para filtrar — {filtered.length - MAX_VISIBLE} conveniados ocultos
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>
