@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useRef } from "react";
 
 interface Props {
   isDirty: boolean;
@@ -11,20 +11,19 @@ export function UnsavedChangesGuard({
   isDirty,
   message = "Você tem alterações não salvas. Deseja sair?",
 }: Props) {
-  const handleBeforeUnload = useCallback(
-    (e: BeforeUnloadEvent) => {
-      if (isDirty) {
+  const dirtyRef = useRef(isDirty);
+  dirtyRef.current = isDirty;
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (dirtyRef.current) {
         e.preventDefault();
         e.returnValue = message;
       }
-    },
-    [isDirty, message]
-  );
-
-  useEffect(() => {
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [handleBeforeUnload]);
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [message]);
 
   return null;
 }
