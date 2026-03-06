@@ -1,0 +1,146 @@
+export const ptBR = {
+  // General
+  appName: "FarmaFácil Convênios",
+  loading: "Carregando...",
+  save: "Salvar",
+  cancel: "Cancelar",
+  confirm: "Confirmar",
+  delete: "Excluir",
+  edit: "Editar",
+  create: "Criar",
+  search: "Buscar",
+  filter: "Filtrar",
+  export: "Exportar",
+  back: "Voltar",
+  next: "Próximo",
+  previous: "Anterior",
+  close: "Fechar",
+  yes: "Sim",
+  no: "Não",
+  active: "Ativo",
+  inactive: "Inativo",
+  actions: "Ações",
+  noResults: "Nenhum resultado encontrado",
+
+  // Auth
+  login: "Entrar",
+  logout: "Sair",
+  email: "E-mail",
+  password: "Senha",
+  loginTitle: "Acesse sua conta",
+  loginSubtitle: "Entre com suas credenciais para continuar",
+  loginError: "E-mail ou senha incorretos",
+  loginSuccess: "Login realizado com sucesso",
+
+  // Navigation
+  dashboard: "Dashboard",
+  sales: "Vendas",
+  newSale: "Nova Venda",
+  convenios: "Convênios",
+  conveniados: "Conveniados",
+  stores: "Lojas",
+  users: "Usuários",
+  exportCenter: "Exportar",
+
+  // Dashboard
+  todaySales: "Vendas Hoje",
+  totalValueToday: "Valor Total Hoje",
+  lastSale: "Última Venda",
+  recentSales: "Vendas Recentes",
+  totalSales: "Total de Vendas",
+  salesByStore: "Vendas por Loja",
+  salesByConvenio: "Vendas por Convênio",
+
+  // Sale Wizard
+  step: "Etapa",
+  selectConvenio: "Selecione o Convênio",
+  selectConveniado: "Selecione o Conveniado",
+  saleDetails: "Detalhes da Venda",
+  photoCapture: "Fotografar Requisições",
+  reviewSubmit: "Revisão e Confirmação",
+  searchConvenio: "Buscar convênio...",
+  searchConveniado: "Buscar conveniado por nome ou CPF...",
+  saleDate: "Data da Venda",
+  totalValue: "Valor Total",
+  isInstallment: "Parcelado?",
+  installmentCount: "Número de Parcelas",
+  capturePhoto: "Fotografar Requisição Assinada",
+  captureInstallment: "Parcela",
+  retakePhoto: "Refazer Foto",
+  compressing: "Comprimindo imagem...",
+  confirmSale: "Confirmar Venda",
+  saleSuccess: "Venda registrada com sucesso!",
+  saleError: "Erro ao registrar venda. Tente novamente.",
+  saleId: "Código da Venda",
+
+  // Convênios
+  companyName: "Razão Social",
+  cnpj: "CNPJ",
+  createConvenio: "Novo Convênio",
+  editConvenio: "Editar Convênio",
+  importConvenios: "Importar Convênios",
+  importConveniados: "Importar Conveniados",
+
+  // Conveniados
+  fullName: "Nome Completo",
+  cpf: "CPF",
+  convenio: "Convênio",
+  createConveniado: "Novo Conveniado",
+  editConveniado: "Editar Conveniado",
+
+  // Export
+  exportTitle: "Central de Exportação",
+  selectDateRange: "Selecione o período",
+  dateFrom: "Data Inicial",
+  dateTo: "Data Final",
+  exportPdf: "Exportar PDF",
+  exportXlsx: "Exportar XLSX",
+  exportImages: "Exportar Imagens (ZIP)",
+  exporting: "Exportando...",
+  exportSuccess: "Exportação concluída com sucesso!",
+  exportError: "Erro ao exportar. Tente novamente.",
+
+  // Status
+  pending: "Pendente",
+  exported: "Exportado",
+  closed: "Fechado",
+
+  // Stores
+  storeName: "Nome da Loja",
+  storeSlug: "Código",
+  lastActivity: "Última Atividade",
+  salesCount: "Qtd. Vendas",
+
+  // Users
+  resetPassword: "Redefinir Senha",
+  activateUser: "Ativar Usuário",
+  deactivateUser: "Desativar Usuário",
+  role: "Perfil",
+  admin: "Administrador",
+  store: "Loja",
+
+  // Errors
+  networkError: "Sem conexão — dados serão enviados quando a internet voltar",
+  genericError: "Ocorreu um erro inesperado. Tente novamente.",
+  unauthorized: "Você não tem permissão para acessar esta página.",
+  notFound: "Página não encontrada.",
+  unsavedChanges: "Você tem alterações não salvas. Deseja sair?",
+
+  // CSV Import
+  csvUpload: "Selecionar arquivo CSV",
+  csvPreview: "Pré-visualização",
+  csvImport: "Importar",
+  csvImporting: "Importando...",
+  csvSuccess: "Importação concluída!",
+  csvError: "Erro durante a importação.",
+  csvRowsImported: "registros importados",
+  csvRowsError: "registros com erro",
+
+  // Image
+  imageRequired: "Foto obrigatória",
+  imageInvalidType: "O arquivo selecionado não é uma imagem válida",
+  imageCompressing: "Comprimindo...",
+  imageReady: "Pronta",
+} as const;
+
+export type TranslationKey = keyof typeof ptBR;
