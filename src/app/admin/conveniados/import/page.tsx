@@ -32,7 +32,7 @@ type Step = "upload" | "preview" | "result";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_ROWS = 5000;
-const ACCEPTED_EXTENSIONS = [".xlsx", ".xls", ".txt"];
+const ACCEPTED_EXTENSIONS = [".csv", ".xlsx", ".xls", ".txt"];
 
 const CPF_REGEX = /\d{3}\.\d{3}\.\d{3}-\d{2}/;
 
@@ -46,7 +46,7 @@ function normalizeForCompare(value: string): string {
 
 /**
  * Parser para relatório TXT do WebPharma (formato fixo).
- * Extrai convênio, nomes e CPFs das linhas do relatório.
+ * Pula cabeçalho até a linha de traços (----), extrai convênio e conveniados.
  */
 function parseTxtWebPharma(text: string): {
   convenioName: string;
@@ -59,52 +59,45 @@ function parseTxtWebPharma(text: string): {
   let ignored = 0;
   const seenCpfs = new Set<string>();
 
-  for (const line of lines) {
-    const trimmed = line.trimEnd();
+  // Encontrar separador de traços (----) para pular cabeçalho
+  let dataStart = 0;
+  for (let i = 0; i < Math.min(lines.length, 20); i++) {
+    if (/^-{10,}/.test(lines[i].trim())) {
+      dataStart = i + 1;
+      break;
+    }
+  }
+  // Fallback: pular as primeiras 10 linhas
+  if (dataStart === 0) dataStart = Math.min(10, lines.length);
 
-    // Ignorar linhas vazias, separadores e cabeçalhos do relatório
+  for (let i = dataStart; i < lines.length; i++) {
+    const trimmed = lines[i].trimEnd();
     if (!trimmed) continue;
-    if (/^[=\-]{4,}/.test(trimmed)) continue;
-    if (/^\s*Nome\s+Situacao/i.test(trimmed)) continue;
-    if (/PAG\.:|DATA:|HORA:|WEBPHARMA|ALRUSUAR/i.test(trimmed)) continue;
-    if (/^\s*Nascim\s+CPF/i.test(trimmed)) continue;
+
+    // Ignorar rodapé e separadores
+    if (/^={3,}/.test(trimmed)) continue;
     if (/Registros Listados/i.test(trimmed)) continue;
 
-    // Detectar linha do convênio: não indentada, contém "ATIVO" e dados financeiros
-    if (!trimmed.startsWith(" ") && /\bATIVO\b/i.test(trimmed) && !CPF_REGEX.test(trimmed)) {
+    // Linha do convênio: tem "ATIVO" mas não tem CPF
+    if (/\bATIVO\b/i.test(trimmed) && !CPF_REGEX.test(trimmed)) {
       const name = trimmed.split(/\s{2,}/)[0].trim();
-      if (name && !convenioName) {
-        convenioName = name;
-      }
+      if (name && !convenioName) convenioName = name;
       continue;
     }
 
-    // Detectar linhas de conveniados: contém CPF no formato XXX.XXX.XXX-XX
+    // Linha de conveniado: contém CPF no formato XXX.XXX.XXX-XX
     const cpfMatch = trimmed.match(CPF_REGEX);
     if (cpfMatch) {
-      const cpfFormatted = cpfMatch[0];
-      const cpfRaw = cpfFormatted.replace(/\D/g, "");
-
-      // Extrair nome: texto antes de "ATIVO", removendo indentação
+      const cpfRaw = cpfMatch[0].replace(/\D/g, "");
       const ativoIdx = trimmed.indexOf("ATIVO");
-      const fullName = ativoIdx > 0
-        ? trimmed.substring(0, ativoIdx).trim()
-        : trimmed.substring(0, trimmed.indexOf(cpfFormatted)).trim();
+      const fullName =
+        ativoIdx > 0
+          ? trimmed.substring(0, ativoIdx).trim()
+          : trimmed.substring(0, trimmed.indexOf(cpfMatch[0])).trim();
 
-      if (!validateCPF(cpfRaw)) {
-        ignored++;
-        continue;
-      }
-
-      if (fullName.length < 2) {
-        ignored++;
-        continue;
-      }
-
-      if (seenCpfs.has(cpfRaw)) {
-        ignored++;
-        continue;
-      }
+      if (!validateCPF(cpfRaw)) { ignored++; continue; }
+      if (fullName.length < 2) { ignored++; continue; }
+      if (seenCpfs.has(cpfRaw)) { ignored++; continue; }
       seenCpfs.add(cpfRaw);
 
       rows.push({ full_name: fullName, cpf: cpfRaw });
@@ -112,6 +105,35 @@ function parseTxtWebPharma(text: string): {
   }
 
   return { convenioName, rows, ignored };
+}
+
+function downloadCsvTemplate() {
+  const BOM = "\uFEFF";
+  const content =
+    BOM +
+    "Convênio;Nome Completo;CPF\n" +
+    "FARMAFACIL;MARIA DA SILVA;123.456.789-09\n" +
+    "FARMAFACIL;JOSE DOS SANTOS;987.654.321-00\n";
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "modelo_conveniados.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadXlsxTemplate() {
+  const wb = XLSX.utils.book_new();
+  const data = [
+    ["Convênio", "Nome Completo", "CPF"],
+    ["FARMAFACIL", "MARIA DA SILVA", "123.456.789-09"],
+    ["FARMAFACIL", "JOSE DOS SANTOS", "987.654.321-00"],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws["!cols"] = [{ wch: 20 }, { wch: 35 }, { wch: 18 }];
+  XLSX.utils.book_append_sheet(wb, ws, "Conveniados");
+  XLSX.writeFile(wb, "modelo_conveniados.xlsx");
 }
 
 export default function ImportConveniadosXlsxPage() {
@@ -158,6 +180,61 @@ export default function ImportConveniadosXlsxPage() {
       });
     },
     []
+  );
+
+  const processCsv = useCallback(
+    (text: string) => {
+      const clean = text.replace(/^\uFEFF/, "");
+      const lines = clean.split(/\r?\n/).filter((l) => l.trim());
+      if (lines.length < 2) {
+        toast.error(ptBR.xlsxErrorNoData);
+        return;
+      }
+
+      const dataLines = lines.slice(1);
+      if (dataLines.length > MAX_ROWS) {
+        toast.error(ptBR.xlsxErrorMaxRows);
+        return;
+      }
+
+      const firstConvenio = normalizeForCompare(
+        dataLines[0].split(";")[0]?.trim() ?? ""
+      );
+      if (!firstConvenio) {
+        toast.error(ptBR.xlsxErrorNoData);
+        return;
+      }
+
+      const valid: ValidRow[] = [];
+      let ignored = 0;
+      const seenCpfs = new Set<string>();
+
+      for (const line of dataLines) {
+        const parts = line.split(";");
+        const rowConvenio = normalizeForCompare(parts[0]?.trim() ?? "");
+        const fullName = parts[1]?.trim() ?? "";
+        const cpfRaw = (parts[2]?.trim() ?? "").replace(/\D/g, "");
+
+        if (rowConvenio && rowConvenio !== firstConvenio) {
+          toast.error(ptBR.xlsxErrorMultipleConvenios);
+          return;
+        }
+        if (!cpfRaw || !validateCPF(cpfRaw)) { ignored++; continue; }
+        if (fullName.length < 2) { ignored++; continue; }
+        if (seenCpfs.has(cpfRaw)) { ignored++; continue; }
+        seenCpfs.add(cpfRaw);
+        valid.push({ full_name: fullName, cpf: cpfRaw });
+      }
+
+      if (valid.length === 0) {
+        toast.error(ptBR.xlsxErrorNoData);
+        return;
+      }
+
+      const originalName = dataLines[0].split(";")[0]?.trim() ?? "";
+      applyParsedData(originalName, valid, ignored);
+    },
+    [applyParsedData]
   );
 
   const processXlsx = useCallback(
@@ -269,12 +346,21 @@ export default function ImportConveniadosXlsxPage() {
         return;
       }
 
-      if (ext === ".txt") {
+      if (ext === ".csv") {
         const reader = new FileReader();
         reader.onload = (ev) => {
           try {
-            const text = ev.target?.result as string;
-            processTxt(text);
+            processCsv(ev.target?.result as string);
+          } catch {
+            toast.error(ptBR.xlsxErrorParsing);
+          }
+        };
+        reader.readAsText(file, "utf-8");
+      } else if (ext === ".txt") {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            processTxt(ev.target?.result as string);
           } catch {
             toast.error(ptBR.xlsxErrorParsing);
           }
@@ -292,12 +378,20 @@ export default function ImportConveniadosXlsxPage() {
         reader.readAsArrayBuffer(file);
       }
     },
-    [processXlsx, processTxt]
+    [processCsv, processXlsx, processTxt]
   );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) processFile(file);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const selectFileOfType = (type: "csv" | "xlsx" | "txt") => {
+    if (!fileRef.current) return;
+    const accepts = { csv: ".csv", xlsx: ".xlsx,.xls", txt: ".txt" };
+    fileRef.current.accept = accepts[type];
+    fileRef.current.click();
   };
 
   const handleDrop = useCallback(
@@ -383,57 +477,117 @@ export default function ImportConveniadosXlsxPage() {
         <h2 className="text-xl font-bold">{ptBR.xlsxUploadTitle}</h2>
       </div>
 
-      {/* ETAPA 1 — Upload */}
+      {/* ETAPA 1 — Seleção de formato e Upload */}
       {step === "upload" && (
-        <Card className="shadow-subtle">
-          <CardHeader>
-            <CardTitle className="text-sm">{ptBR.xlsxUploadTitle}</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              {ptBR.xlsxUploadDesc}
+        <>
+          <p className="text-sm text-muted-foreground">
+            Selecione o formato do arquivo para importar conveniados.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {/* CSV */}
+            <Card className="shadow-subtle">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  📄 Planilha CSV
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Separador: ponto-e-vírgula (;)
+                  <br />
+                  Colunas: Convênio, Nome Completo, CPF
+                </p>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadCsvTemplate}
+                >
+                  📥 Baixar Modelo CSV
+                </Button>
+                <Button size="sm" onClick={() => selectFileOfType("csv")}>
+                  Selecionar Arquivo .csv
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* XLSX */}
+            <Card className="shadow-subtle">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  📊 Planilha Excel
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Colunas: Convênio, Nome Completo, CPF
+                  <br />
+                  Formatos: .xlsx, .xls
+                </p>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadXlsxTemplate}
+                >
+                  📥 Baixar Modelo Excel
+                </Button>
+                <Button size="sm" onClick={() => selectFileOfType("xlsx")}>
+                  Selecionar Arquivo .xlsx
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* TXT */}
+            <Card className="shadow-subtle">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  📃 Relatório WebPharma
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Arquivo .txt exportado diretamente do sistema WebPharma. O
+                  convênio é identificado automaticamente pelo nome.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <Button size="sm" onClick={() => selectFileOfType("txt")}>
+                  Selecionar Arquivo .txt
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Drag-drop alternativo */}
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+              isDragging
+                ? "border-primary bg-primary/5"
+                : "border-muted-foreground/25"
+            }`}
+            onClick={() => {
+              if (fileRef.current) {
+                fileRef.current.accept = ".csv,.xlsx,.xls,.txt";
+                fileRef.current.click();
+              }
+            }}
+          >
+            <p className="text-sm text-muted-foreground">
+              Ou arraste qualquer arquivo aqui
             </p>
-          </CardHeader>
-          <CardContent>
-            <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onClick={() => fileRef.current?.click()}
-              className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center transition-colors ${
-                isDragging
-                  ? "border-primary bg-primary/5"
-                  : "border-muted-foreground/25 hover:border-primary/50"
-              }`}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="mb-4 text-muted-foreground"
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" x2="12" y1="3" y2="15" />
-              </svg>
-              <p className="text-sm font-medium">{ptBR.xlsxDragDrop}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {ptBR.xlsxAcceptedFormats}
-              </p>
-            </div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".xlsx,.xls,.txt"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </CardContent>
-        </Card>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Formatos aceitos: .csv, .xlsx, .xls, .txt (máx. 5MB)
+            </p>
+          </div>
+
+          <input
+            ref={fileRef}
+            type="file"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        </>
       )}
 
       {/* ETAPA 2 — Preview */}

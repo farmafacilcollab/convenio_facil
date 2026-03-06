@@ -160,11 +160,11 @@ export const ptBR = {
   xlsxMassRemovalDesc: "Esta importação vai desativar {count} conveniados ativos. Deseja continuar?",
   xlsxErrorMultipleConvenios: "Erro: a planilha contém mais de um convênio. Importe uma planilha por convênio.",
   xlsxErrorNoData: "Nenhum dado válido encontrado no arquivo",
-  xlsxErrorInvalidFile: "Arquivo inválido. Envie apenas arquivos .xlsx, .xls ou .txt",
-  importErrorInvalidFile: "Arquivo inválido. Envie apenas arquivos .xlsx, .xls ou .txt",
+  xlsxErrorInvalidFile: "Arquivo inválido. Envie apenas arquivos .csv, .xlsx, .xls ou .txt",
+  importErrorInvalidFile: "Arquivo inválido. Envie apenas arquivos .csv, .xlsx, .xls ou .txt",
   xlsxErrorFileSize: "O arquivo excede o limite de 5MB",
   xlsxErrorMaxRows: "A planilha excede o limite de 5.000 linhas",
-  xlsxErrorParsing: "Erro ao ler a planilha. Verifique o formato do arquivo.",
+  xlsxErrorParsing: "Erro ao ler o arquivo. Verifique o formato do arquivo.",
 
   // Image
   imageRequired: "Foto obrigatória",
