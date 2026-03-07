@@ -174,10 +174,15 @@ export default function ImportConveniadosXlsxPage() {
       setConvenioName(convenio);
       setStep("preview");
 
-      previewSyncConveniados(valid, convenio).then((res) => {
-        if ("error" in res) return;
-        setConvenioFound(res.convenioFound);
-      });
+      previewSyncConveniados(valid, convenio)
+        .then((res) => {
+          if ("error" in res) {
+            toast.error(res.error);
+            return;
+          }
+          setConvenioFound(res.convenioFound);
+        })
+        .catch(() => toast.error("Erro ao verificar convênio. Tente novamente."));
     },
     []
   );

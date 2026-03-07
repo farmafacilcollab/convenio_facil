@@ -164,6 +164,27 @@ export async function importConveniados(
 
 type SyncRow = { full_name: string; cpf: string };
 
+const BATCH_SIZE = 300;
+
+async function batchSelectIn<T>(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  table: string,
+  columns: string,
+  filterCol: string,
+  values: string[],
+  extraFilter?: { col: string; val: string },
+): Promise<T[]> {
+  const results: T[] = [];
+  for (let i = 0; i < values.length; i += BATCH_SIZE) {
+    const chunk = values.slice(i, i + BATCH_SIZE);
+    let query = supabase.from(table).select(columns).in(filterCol, chunk);
+    if (extraFilter) query = query.eq(extraFilter.col, extraFilter.val);
+    const { data } = await query;
+    if (data) results.push(...(data as T[]));
+  }
+  return results;
+}
+
 function normalizeConvenioName(name: string): string {
   return name
     .trim()
@@ -190,6 +211,7 @@ export async function previewSyncConveniados(
   rows: SyncRow[],
   convenioName: string
 ): Promise<PreviewSyncResult> {
+  try {
   const supabase = await createClient();
 
   const {
@@ -252,12 +274,11 @@ export async function previewSyncConveniados(
   // Verificar CPFs que existem em OUTROS convênios
   if (cpfsRecebidos.size > 0) {
     const cpfArray = Array.from(cpfsRecebidos);
-    const { data: otherConveniados } = await supabase
-      .from("conveniados")
-      .select("cpf, convenio_id")
-      .in("cpf", cpfArray);
+    const otherConveniados = await batchSelectIn<{ cpf: string; convenio_id: string }>(
+      supabase, "conveniados", "cpf, convenio_id", "cpf", cpfArray,
+    );
 
-    for (const c of otherConveniados ?? []) {
+    for (const c of otherConveniados) {
       if (convenioId && c.convenio_id === convenioId) continue;
       if (!convenioId || c.convenio_id !== convenioId) {
         if (cpfsRecebidos.has(c.cpf) && !existingMap.has(c.cpf)) {
@@ -308,6 +329,10 @@ export async function previewSyncConveniados(
     totalActive,
     ignored,
   };
+  } catch (err) {
+    console.error("previewSyncConveniados error:", err);
+    return { error: "Erro ao processar preview. Tente novamente." };
+  }
 }
 
 export type ExecuteSyncResult =
@@ -326,6 +351,7 @@ export async function executeSyncConveniados(
   rows: SyncRow[],
   convenioName: string
 ): Promise<ExecuteSyncResult> {
+  try {
   const supabase = await createClient();
 
   const {
@@ -390,12 +416,11 @@ export async function executeSyncConveniados(
 
   // Verificar CPFs em outros convênios
   if (cpfsRecebidos.size > 0) {
-    const { data: otherConveniados } = await supabase
-      .from("conveniados")
-      .select("cpf, convenio_id")
-      .in("cpf", Array.from(cpfsRecebidos));
+    const otherConveniados = await batchSelectIn<{ cpf: string; convenio_id: string }>(
+      supabase, "conveniados", "cpf, convenio_id", "cpf", Array.from(cpfsRecebidos),
+    );
 
-    for (const c of otherConveniados ?? []) {
+    for (const c of otherConveniados) {
       if (c.convenio_id !== convenioId && cpfsRecebidos.has(c.cpf)) {
         ignored.push(`CPF ${c.cpf} já vinculado a outro convênio`);
         cpfsRecebidos.delete(c.cpf);
@@ -467,4 +492,8 @@ export async function executeSyncConveniados(
 
   revalidatePath("/admin/conveniados");
   return { success: true, convenioId, added, updated, reactivated, deactivated, ignored };
+  } catch (err) {
+    console.error("executeSyncConveniados error:", err);
+    return { error: "Erro ao sincronizar conveniados. Tente novamente." };
+  }
 }
