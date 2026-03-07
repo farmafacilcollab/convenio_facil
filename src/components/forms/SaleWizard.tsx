@@ -258,6 +258,8 @@ export function SaleWizard() {
           <Button
             size="lg"
             className="flex-1 rounded-xl"
+            onClick={handleSubmit}
+            disabled={submitting || !canProceed()}
           >
             {submitting ? ptBR.loading : ptBR.confirmSale}
           </Button>

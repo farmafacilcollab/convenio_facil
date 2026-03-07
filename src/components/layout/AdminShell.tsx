@@ -90,7 +90,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             key={item.href}
             href={item.href}
             onClick={onItemClick}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-all duration-200 ${
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-colors duration-150 ${
               isActive
                 ? "bg-primary/10 text-primary font-semibold"
                 : "text-muted-foreground active:bg-accent"
