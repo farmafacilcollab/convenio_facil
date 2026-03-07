@@ -90,10 +90,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             key={item.href}
             href={item.href}
             onClick={onItemClick}
-            className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-all duration-200 ${
               isActive
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                ? "bg-primary/10 text-primary font-semibold"
+                : "text-muted-foreground active:bg-accent"
             }`}
           >
             {item.icon}
@@ -109,18 +109,18 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <OfflineBanner />
 
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 flex-shrink-0 border-r bg-card lg:block">
+      <aside className="hidden w-72 flex-shrink-0 border-r border-border/50 bg-card lg:block">
         <div className="flex h-full flex-col">
-          <div className="p-6">
+          <div className="p-5">
             <h1 className="text-lg font-bold text-foreground">
               {ptBR.appName}
             </h1>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               Painel Administrativo
             </p>
           </div>
           <Separator />
-          <div className="flex-1 p-4">
+          <div className="flex-1 p-3">
             <NavLinks />
           </div>
           <Separator />
@@ -144,7 +144,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       {/* Mobile layout */}
       <div className="flex flex-1 flex-col">
         {/* Mobile header */}
-        <header className="sticky top-0 z-40 border-b bg-card/80 backdrop-blur-md lg:hidden">
+        <header className="sticky top-0 z-40 bg-[var(--glass-bg)] backdrop-blur-[20px] will-change-[backdrop-filter] lg:hidden" style={{ borderBottom: '0.5px solid var(--glass-border)' }}>
           <div className="flex h-14 items-center justify-between px-4">
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
@@ -152,7 +152,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-64 p-0">
+              <SheetContent side="left" className="w-[280px] p-0">
                 <div className="flex h-full flex-col">
                   <div className="p-6">
                     <h1 className="text-lg font-bold text-foreground">

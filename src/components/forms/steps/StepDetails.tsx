@@ -77,7 +77,7 @@ export function StepDetails({
       </div>
 
       {/* Installment toggle */}
-      <div className="flex items-center justify-between rounded-xl border p-4">
+      <div className="flex items-center justify-between rounded-2xl bg-card p-4 shadow-[var(--shadow-card)]">
         <Label htmlFor="installment" className="text-sm font-medium">
           {ptBR.isInstallment}
         </Label>
@@ -99,7 +99,7 @@ export function StepDetails({
                 type="button"
                 variant={installmentCount === count ? "default" : "outline"}
                 size="lg"
-                className="h-14 text-lg font-semibold"
+                className="h-14 rounded-xl text-lg font-semibold"
                 onClick={() => onInstallmentCountChange(count)}
               >
                 {count}x
@@ -111,7 +111,7 @@ export function StepDetails({
 
       {/* Summary card */}
       {totalValue > 0 && (
-        <Card className="shadow-subtle">
+        <Card>
           <CardContent className="space-y-2 py-4">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">{ptBR.totalValue}</span>

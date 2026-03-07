@@ -120,9 +120,9 @@ export default function ConveniadosPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="animate-ios-fade-in space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">{ptBR.conveniados}</h2>
+        <h2 className="text-[28px] font-bold tracking-tight">{ptBR.conveniados}</h2>
         <div className="flex gap-2">
           <Link href="/admin/conveniados/import">
             <Button variant="outline" size="sm">
@@ -183,7 +183,7 @@ export default function ConveniadosPage() {
           </p>
         ) : (
           filtered.map((c) => (
-            <Card key={c.id} className="shadow-subtle">
+            <Card key={c.id} className="press-scale shadow-[var(--shadow-card)]">
               <CardContent className="flex items-center justify-between py-4">
                 <div>
                   <p className="font-medium">{c.full_name}</p>

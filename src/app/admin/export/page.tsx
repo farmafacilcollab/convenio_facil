@@ -108,10 +108,10 @@ export default function ExportPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">{ptBR.exportTitle}</h2>
+    <div className="animate-ios-fade-in space-y-6">
+      <h2 className="text-[28px] font-bold tracking-tight">{ptBR.exportTitle}</h2>
 
-      <Card className="shadow-subtle">
+      <Card className="shadow-[var(--shadow-card)]">
         <CardHeader>
           <CardTitle className="text-base">{ptBR.selectDateRange}</CardTitle>
         </CardHeader>

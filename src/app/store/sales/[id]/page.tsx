@@ -51,17 +51,17 @@ export default async function SaleDetailPage({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="animate-ios-fade-in space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/store/sales">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" className="rounded-xl">
             ← {ptBR.back}
           </Button>
         </Link>
-        <h2 className="text-xl font-bold">Detalhes da Venda</h2>
+        <h2 className="text-[28px] font-bold tracking-tight">Detalhes da Venda</h2>
       </div>
 
-      <Card className="shadow-subtle">
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -147,7 +147,7 @@ export default async function SaleDetailPage({
           <h3 className="text-base font-semibold">Requisições</h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {imagesWithUrls.map((img) => (
-              <Card key={img.id} className="overflow-hidden shadow-subtle">
+              <Card key={img.id} className="overflow-hidden">
                 {img.url ? (
                   <img
                     src={img.url}

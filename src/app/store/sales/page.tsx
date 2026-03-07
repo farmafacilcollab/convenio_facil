@@ -49,11 +49,11 @@ export default async function SalesListPage({
   const { data: sales } = await query.limit(100);
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold">{ptBR.sales}</h2>
+    <div className="animate-ios-fade-in space-y-6">
+      <h2 className="text-[28px] font-bold tracking-tight">{ptBR.sales}</h2>
 
       {(!sales || sales.length === 0) ? (
-        <Card className="shadow-subtle">
+        <Card className="shadow-[var(--shadow-card)]">
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
             {ptBR.noResults}
           </CardContent>
@@ -70,7 +70,7 @@ export default async function SalesListPage({
 
             return (
               <Link key={sale.id} href={`/store/sales/${sale.id}`}>
-                <Card className="shadow-subtle transition-all duration-200 hover:shadow-md">
+                <Card className="press-scale shadow-[var(--shadow-card)] transition-shadow duration-200 active:shadow-[var(--shadow-elevated)]">
                   <CardContent className="flex items-center justify-between py-3">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">
@@ -100,7 +100,7 @@ export default async function SalesListPage({
                             ? "default"
                             : "outline"
                         }
-                        className="text-[10px]"
+                        className="text-[11px]"
                       >
                         {sale.status === "pending"
                           ? ptBR.pending

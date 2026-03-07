@@ -30,7 +30,7 @@ export function StepReview({
   images,
 }: Props) {
   return (
-    <Card className="shadow-subtle">
+    <Card>
       <CardContent className="space-y-4 py-4">
         <h3 className="text-base font-semibold">{ptBR.reviewSubmit}</h3>
         <Separator />
@@ -93,7 +93,7 @@ export function StepReview({
               .map((img, i) => (
                 <div
                   key={i}
-                  className="overflow-hidden rounded-lg border"
+                  className="overflow-hidden rounded-xl"
                 >
                   <img
                     src={img.preview}

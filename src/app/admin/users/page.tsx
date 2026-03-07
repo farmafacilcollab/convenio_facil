@@ -83,8 +83,8 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">{ptBR.users}</h2>
+    <div className="animate-ios-fade-in space-y-6">
+      <h2 className="text-[28px] font-bold tracking-tight">{ptBR.users}</h2>
 
       <div className="space-y-3">
         {users.length === 0 ? (
@@ -93,7 +93,7 @@ export default function UsersPage() {
           </p>
         ) : (
           users.map((user) => (
-            <Card key={user.id} className="shadow-subtle">
+            <Card key={user.id} className="press-scale shadow-[var(--shadow-card)]">
               <CardContent className="flex items-center justify-between py-4">
                 <div>
                   <p className="font-medium">{user.email}</p>

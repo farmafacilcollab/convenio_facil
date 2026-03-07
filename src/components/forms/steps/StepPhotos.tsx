@@ -66,7 +66,7 @@ export function StepPhotos({ imageCount, isInstallment, imageCapture }: Props) {
                 type="button"
                 variant="outline"
                 size="lg"
-                className="h-32 w-full flex-col gap-2 border-dashed text-muted-foreground"
+                className="h-32 w-full flex-col gap-2 rounded-2xl border-dashed text-muted-foreground"
                 onClick={() => fileInputRefs.current[index]?.click()}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
@@ -75,7 +75,7 @@ export function StepPhotos({ imageCount, isInstallment, imageCapture }: Props) {
             )}
 
             {isCompressing && (
-              <div className="flex h-32 flex-col items-center justify-center gap-3 rounded-xl border border-dashed">
+              <div className="flex h-32 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed">
                 <span className="text-sm text-muted-foreground">
                   {ptBR.compressing}
                 </span>
@@ -84,7 +84,7 @@ export function StepPhotos({ imageCount, isInstallment, imageCapture }: Props) {
             )}
 
             {image && !isCompressing && (
-              <div className="relative overflow-hidden rounded-xl border">
+              <div className="relative overflow-hidden rounded-2xl shadow-[var(--shadow-card)]">
                 <img
                   src={image.preview}
                   alt={label}

@@ -71,15 +71,15 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md shadow-subtle">
+      <Card className="w-full max-w-md shadow-[var(--shadow-elevated)]">
         <CardHeader className="space-y-2 text-center">
-          <h1 className="text-2xl font-bold text-foreground">
+          <h1 className="text-[28px] font-bold tracking-tight text-foreground">
             {ptBR.appName}
           </h1>
           <p className="text-sm text-muted-foreground">{ptBR.loginSubtitle}</p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email">{ptBR.email}</Label>
               <Input
@@ -113,7 +113,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
@@ -121,7 +121,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               className="w-full"
-              size="lg"
+              size="xl"
               disabled={isLoading}
             >
               {isLoading ? ptBR.loading : ptBR.login}

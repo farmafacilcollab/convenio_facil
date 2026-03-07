@@ -53,10 +53,10 @@ export function StepConvenio({ convenios, isLoading, selected, onSelect }: Props
         placeholder={ptBR.searchConvenio}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="h-12"
+        className="h-12 rounded-xl"
       />
 
-      <div className="max-h-80 space-y-2 overflow-y-auto">
+      <div className="max-h-[60vh] space-y-2 overflow-y-auto">
         {filtered.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             {ptBR.noResults}
@@ -66,9 +66,9 @@ export function StepConvenio({ convenios, isLoading, selected, onSelect }: Props
             {filtered.slice(0, MAX_VISIBLE).map((convenio) => (
               <Card
                 key={convenio.id}
-                className={`cursor-pointer shadow-subtle transition-all duration-150 hover:shadow-md ${
+                className={`cursor-pointer press-scale shadow-[var(--shadow-card)] transition-all duration-150 ${
                   selected?.id === convenio.id
-                    ? "ring-2 ring-primary"
+                    ? "ring-2 ring-primary shadow-[var(--shadow-elevated)]"
                     : ""
                 }`}
                 onClick={() => onSelect(convenio)}

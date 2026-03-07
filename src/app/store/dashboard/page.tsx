@@ -45,30 +45,30 @@ export default async function StoreDashboard() {
   const todayTotal = todaySales?.reduce((sum, s) => sum + Number(s.total_value), 0) ?? 0;
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold">{ptBR.dashboard}</h2>
+    <div className="animate-ios-fade-in space-y-6">
+      <h2 className="text-[28px] font-bold tracking-tight">{ptBR.dashboard}</h2>
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 gap-4">
-        <Card className="shadow-subtle">
-          <CardHeader className="pb-2">
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader className="pb-1">
             <CardTitle className="text-xs font-medium text-muted-foreground">
               {ptBR.todaySales}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{todayCount}</p>
+            <p className="text-[28px] font-bold">{todayCount}</p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-subtle">
-          <CardHeader className="pb-2">
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader className="pb-1">
             <CardTitle className="text-xs font-medium text-muted-foreground">
               {ptBR.totalValueToday}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{formatBRL(todayTotal)}</p>
+            <p className="text-[28px] font-bold">{formatBRL(todayTotal)}</p>
           </CardContent>
         </Card>
       </div>
@@ -77,7 +77,7 @@ export default async function StoreDashboard() {
       <div>
         <h3 className="mb-4 text-base font-semibold">{ptBR.recentSales}</h3>
         {(!recentSales || recentSales.length === 0) ? (
-          <Card className="shadow-subtle">
+          <Card className="shadow-[var(--shadow-card)]">
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
               {ptBR.noResults}
             </CardContent>
@@ -94,7 +94,7 @@ export default async function StoreDashboard() {
 
               return (
                 <Link key={sale.id} href={`/store/sales/${sale.id}`}>
-                  <Card className="shadow-subtle transition-all duration-200 hover:shadow-md">
+                  <Card className="press-scale shadow-[var(--shadow-card)] transition-shadow duration-200 active:shadow-[var(--shadow-elevated)]">
                     <CardContent className="flex items-center justify-between py-3">
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">
@@ -119,7 +119,7 @@ export default async function StoreDashboard() {
                               ? "default"
                               : "outline"
                           }
-                          className="text-[10px]"
+                          className="text-[11px]"
                         >
                           {sale.status === "pending"
                             ? ptBR.pending

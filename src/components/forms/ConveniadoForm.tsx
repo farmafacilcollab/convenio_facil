@@ -76,7 +76,7 @@ export function ConveniadoForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="full_name">{ptBR.fullName}</Label>
         <Input

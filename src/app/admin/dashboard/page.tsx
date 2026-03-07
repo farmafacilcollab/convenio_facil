@@ -53,13 +53,13 @@ export default async function AdminDashboardPage() {
     .eq("status", "pending");
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">{ptBR.dashboard}</h2>
+    <div className="animate-ios-fade-in space-y-6">
+      <h2 className="text-[28px] font-bold tracking-tight">{ptBR.dashboard}</h2>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card className="shadow-subtle">
-          <CardHeader className="pb-2">
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader className="pb-1">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               {ptBR.totalSales}
             </CardTitle>
@@ -69,8 +69,8 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-subtle">
-          <CardHeader className="pb-2">
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader className="pb-1">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Valor Total
             </CardTitle>
@@ -80,8 +80,8 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-subtle">
-          <CardHeader className="pb-2">
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader className="pb-1">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               {ptBR.pending}
             </CardTitle>
@@ -95,7 +95,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Sales by Store */}
-      <Card className="shadow-subtle">
+      <Card className="shadow-[var(--shadow-card)]">
         <CardHeader>
           <CardTitle className="text-base">{ptBR.salesByStore}</CardTitle>
         </CardHeader>
@@ -126,7 +126,7 @@ export default async function AdminDashboardPage() {
       </Card>
 
       {/* Sales by Convenio */}
-      <Card className="shadow-subtle">
+      <Card className="shadow-[var(--shadow-card)]">
         <CardHeader>
           <CardTitle className="text-base">{ptBR.salesByConvenio}</CardTitle>
         </CardHeader>

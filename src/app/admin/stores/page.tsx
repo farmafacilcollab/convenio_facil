@@ -35,8 +35,8 @@ export default async function StoresPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">{ptBR.stores}</h2>
+    <div className="animate-ios-fade-in space-y-6">
+      <h2 className="text-[28px] font-bold tracking-tight">{ptBR.stores}</h2>
 
       <div className="space-y-3">
         {storesWithStats.length === 0 ? (
@@ -45,7 +45,7 @@ export default async function StoresPage() {
           </p>
         ) : (
           storesWithStats.map((store) => (
-            <Card key={store.id} className="shadow-subtle">
+            <Card key={store.id} className="press-scale shadow-[var(--shadow-card)]">
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div>

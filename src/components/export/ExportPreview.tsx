@@ -11,7 +11,7 @@ interface ExportPreviewProps {
 
 export function ExportPreview({ data, imageCount }: ExportPreviewProps) {
   return (
-    <Card className="shadow-subtle">
+    <Card>
       <CardHeader>
         <CardTitle className="text-sm">Resumo da Exportação</CardTitle>
       </CardHeader>

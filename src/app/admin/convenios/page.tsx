@@ -95,9 +95,9 @@ export default function ConveniosPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="animate-ios-fade-in space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">{ptBR.convenios}</h2>
+        <h2 className="text-[28px] font-bold tracking-tight">{ptBR.convenios}</h2>
         <div className="flex gap-2">
           <Link href="/admin/convenios/import">
             <Button variant="outline" size="sm">
@@ -141,7 +141,7 @@ export default function ConveniosPage() {
           </p>
         ) : (
           filtered.map((c) => (
-            <Card key={c.id} className="shadow-subtle">
+            <Card key={c.id} className="press-scale shadow-[var(--shadow-card)]">
               <CardContent className="flex items-center justify-between py-4">
                 <div>
                   <p className="font-medium">{c.company_name}</p>

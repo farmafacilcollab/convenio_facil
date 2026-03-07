@@ -143,10 +143,10 @@ export function SaleWizard() {
   if (successSaleId) {
     return (
       <div className="mx-auto max-w-lg space-y-6">
-        <Card className="shadow-subtle">
+        <Card className="shadow-[var(--shadow-card)]">
           <CardContent className="flex flex-col items-center gap-4 py-10">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-green-600"><path d="M20 6 9 17l-5-5"/></svg>
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-green-600"><path d="M20 6 9 17l-5-5"/></svg>
             </div>
             <h3 className="text-lg font-semibold">Venda registrada com sucesso!</h3>
             <p className="text-center text-sm text-muted-foreground">
@@ -154,10 +154,10 @@ export function SaleWizard() {
             </p>
             <div className="flex w-full flex-col gap-3 pt-2">
               <a href={`/store/sales/${successSaleId}`}>
-                <Button size="lg" className="w-full">Ver Detalhes</Button>
+                <Button size="lg" className="w-full rounded-xl">Ver Detalhes</Button>
               </a>
               <a href="/store/sales/new">
-                <Button variant="outline" size="lg" className="w-full">Nova Venda</Button>
+                <Button variant="outline" size="lg" className="w-full rounded-xl">Nova Venda</Button>
               </a>
             </div>
           </CardContent>
@@ -172,11 +172,11 @@ export function SaleWizard() {
 
       {/* Step indicator */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>
             {ptBR.step} {currentStep + 1} de {STEPS.length}
           </span>
-          <span>{STEPS[currentStep]}</span>
+          <span className="font-medium">{STEPS[currentStep]}</span>
         </div>
         <Progress value={((currentStep + 1) / STEPS.length) * 100} />
       </div>
@@ -237,7 +237,7 @@ export function SaleWizard() {
           <Button
             variant="outline"
             size="lg"
-            className="flex-1"
+            className="flex-1 rounded-xl"
             onClick={() => setCurrentStep((s) => s - 1)}
             disabled={submitting}
           >
@@ -248,7 +248,7 @@ export function SaleWizard() {
         {currentStep < STEPS.length - 1 ? (
           <Button
             size="lg"
-            className="flex-1"
+            className="flex-1 rounded-xl"
             onClick={() => setCurrentStep((s) => s + 1)}
             disabled={!canProceed()}
           >
@@ -257,9 +257,7 @@ export function SaleWizard() {
         ) : (
           <Button
             size="lg"
-            className="flex-1"
-            onClick={handleSubmit}
-            disabled={submitting || !canProceed()}
+            className="flex-1 rounded-xl"
           >
             {submitting ? ptBR.loading : ptBR.confirmSale}
           </Button>
