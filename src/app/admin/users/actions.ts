@@ -3,6 +3,23 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import type { Profile, Store } from "@/lib/types/app.types";
+
+export type UserRow = Profile & { store: Pick<Store, "name"> | null };
+
+export async function fetchUsersAdmin(): Promise<UserRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("*, store:stores(name)")
+    .order("role")
+    .order("email");
+
+  return (data ?? []).map((d) => ({
+    ...d,
+    store: Array.isArray(d.store) ? d.store[0] ?? null : d.store,
+  }));
+}
 
 export async function resetUserPassword(userId: string) {
   const supabase = await createClient();

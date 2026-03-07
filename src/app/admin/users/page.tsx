@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { createBrowserClient } from "@supabase/ssr";
-import type { Database } from "@/lib/types/database.types";
-import type { Profile, Store } from "@/lib/types/app.types";
+import { useState, useEffect } from "react";
+import type { UserRow } from "./actions";
+import { fetchUsersAdmin, resetUserPassword, toggleUserActive } from "./actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,44 +16,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { resetUserPassword, toggleUserActive } from "./actions";
 import { ptBR } from "@/lib/i18n/pt-BR";
 import { toast } from "sonner";
 
-type UserRow = Profile & {
-  store: Pick<Store, "name"> | null;
-};
-
 export default function UsersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [resetDialog, setResetDialog] = useState<{
     userId: string;
     email: string;
   } | null>(null);
 
-  const supabase = createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  const fetchUsers = useCallback(async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*, store:stores(name)")
-      .order("role")
-      .order("email");
-
-    setUsers(
-      (data ?? []).map((d) => ({
-        ...d,
-        store: Array.isArray(d.store) ? d.store[0] ?? null : d.store,
-      }))
-    );
-  }, [supabase]);
+  const fetchUsers = async () => {
+    const data = await fetchUsersAdmin();
+    setUsers(data);
+    setLoading(false);
+  };
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+  }, []);
 
   const handleResetPassword = async () => {
     if (!resetDialog) return;
@@ -87,7 +68,7 @@ export default function UsersPage() {
       <h2 className="text-[28px] font-bold tracking-tight">{ptBR.users}</h2>
 
       <div className="space-y-3">
-        {users.length === 0 ? (
+        {users.length === 0 && !loading ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             {ptBR.noResults}
           </p>
