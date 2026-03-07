@@ -56,7 +56,7 @@ export function StepConvenio({ convenios, isLoading, selected, onSelect }: Props
         className="h-12 rounded-xl"
       />
 
-      <div className="max-h-[60vh] space-y-2 overflow-y-auto">
+      <div className="max-h-[50vh] space-y-2 overflow-y-auto">
         {filtered.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             {ptBR.noResults}

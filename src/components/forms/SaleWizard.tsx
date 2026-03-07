@@ -167,7 +167,7 @@ export function SaleWizard() {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
+    <div className="mx-auto flex max-w-lg flex-col" style={{ minHeight: 'calc(100dvh - 180px)' }}>
       <UnsavedChangesGuard isDirty={isDirty} />
 
       {/* Step indicator */}
@@ -181,8 +181,8 @@ export function SaleWizard() {
         <Progress value={((currentStep + 1) / STEPS.length) * 100} />
       </div>
 
-      {/* Step content with transition */}
-      <div className="transition-all duration-200 ease-in-out">
+      {/* Step content — grows to fill space */}
+      <div className="mt-6 min-h-0 flex-1">
         {currentStep === 0 && (
           <StepConvenio
             convenios={convenios}
@@ -231,8 +231,8 @@ export function SaleWizard() {
         )}
       </div>
 
-      {/* Navigation buttons */}
-      <div className="flex gap-3">
+      {/* Navigation buttons — pinned to bottom */}
+      <div className="sticky bottom-0 mt-4 flex gap-3 bg-background pb-4 pt-2">
         {currentStep > 0 && (
           <Button
             variant="outline"
