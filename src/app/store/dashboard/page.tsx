@@ -15,13 +15,13 @@ export default async function StoreDashboard() {
 
   if (!user) return null;
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("store_id")
     .eq("id", user.id)
     .single();
 
-  if (!profile?.store_id) return null;
+  if (profileError || !profile?.store_id) return null;
 
   const today = new Date().toISOString().split("T")[0];
 

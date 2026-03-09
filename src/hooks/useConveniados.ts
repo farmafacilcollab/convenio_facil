@@ -17,14 +17,19 @@ export function useConveniados(convenioId?: string) {
     }
 
     setIsLoading(true);
-    const { data } = await supabaseRef.current
-      .from("conveniados")
-      .select("*")
-      .eq("convenio_id", id)
-      .eq("active", true)
-      .order("full_name");
-    setConveniados(data ?? []);
-    setIsLoading(false);
+    try {
+      const { data } = await supabaseRef.current
+        .from("conveniados")
+        .select("*")
+        .eq("convenio_id", id)
+        .eq("active", true)
+        .order("full_name");
+      setConveniados(data ?? []);
+    } catch {
+      setConveniados([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, [convenioId]);
 
   return { conveniados, isLoading, fetchConveniados };

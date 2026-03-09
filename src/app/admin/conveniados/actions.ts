@@ -139,11 +139,23 @@ export async function importConveniados(
 
   for (const row of rows) {
     const cpf = row.cpf.replace(/\D/g, "");
+
+    const parsed = conveniadoSchema.safeParse({
+      full_name: row.full_name.trim(),
+      cpf,
+      convenio_id: row.convenio_id,
+      active: true,
+    });
+    if (!parsed.success) {
+      errors++;
+      continue;
+    }
+
     const { error } = await supabase.from("conveniados").upsert(
       {
-        full_name: row.full_name.trim(),
-        cpf,
-        convenio_id: row.convenio_id,
+        full_name: parsed.data.full_name,
+        cpf: parsed.data.cpf,
+        convenio_id: parsed.data.convenio_id,
         active: true,
         created_by: user.id,
       },

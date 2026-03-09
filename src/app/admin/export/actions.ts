@@ -135,14 +135,18 @@ export async function fetchExportData(
     .map((s) => s.id);
 
   if (pendingSaleIds.length > 0) {
-    await supabase
+    const { error: updateError } = await supabase
       .from("sales")
       .update({ status: "exported" })
       .in("id", pendingSaleIds);
+
+    if (updateError) {
+      return { error: "Erro ao atualizar status das vendas" };
+    }
   }
 
   // Log export
-  await supabase.from("export_logs").insert({
+  const { error: logError } = await supabase.from("export_logs").insert({
     exported_by: user.id,
     convenio_id: convenioId,
     date_from: dateFrom,
@@ -150,6 +154,10 @@ export async function fetchExportData(
     total_sales: sales.length,
     export_type: exportType,
   });
+
+  if (logError) {
+    console.error("Failed to log export:", logError.message);
+  }
 
   revalidatePath("/admin/export");
   revalidatePath("/admin/dashboard");

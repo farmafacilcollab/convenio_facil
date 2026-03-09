@@ -47,12 +47,18 @@ export async function updateSession(request: NextRequest) {
     let role = cachedRole;
 
     if (!role) {
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("role, store_id")
         .eq("id", user.id)
         .single();
-      role = profile?.role ?? undefined;
+      if (profileError || !profile) {
+        // Profile query failed — redirect to login to re-authenticate
+        const url = request.nextUrl.clone();
+        url.pathname = "/login";
+        return NextResponse.redirect(url);
+      }
+      role = profile.role ?? undefined;
       if (role) {
         supabaseResponse.cookies.set("x-user-role", role, {
           path: "/",

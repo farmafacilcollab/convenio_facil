@@ -20,13 +20,13 @@ export default async function SalesListPage({
 
   if (!user) return null;
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("store_id")
     .eq("id", user.id)
     .single();
 
-  if (!profile?.store_id) return null;
+  if (profileError || !profile?.store_id) return null;
 
   let query = supabase
     .from("sales")

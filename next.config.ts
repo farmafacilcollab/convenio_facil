@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 
+const supabaseHostname = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
+  : "";
+
 const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
@@ -7,13 +11,15 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "zabfoldmhecxhbehqefa.supabase.co",
-        pathname: "/storage/v1/object/**",
-      },
-    ],
+    remotePatterns: supabaseHostname
+      ? [
+          {
+            protocol: "https",
+            hostname: supabaseHostname,
+            pathname: "/storage/v1/object/**",
+          },
+        ]
+      : [],
   },
   async headers() {
     return [

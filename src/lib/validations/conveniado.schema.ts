@@ -9,9 +9,10 @@ export const conveniadoSchema = z.object({
   cpf: z
     .string()
     .min(1, "CPF é obrigatório")
-    .refine((val) => validateCPF(val), {
+    .transform((val) => val.replace(/\D/g, ""))
+    .pipe(z.string().refine((val) => validateCPF(val), {
       message: "CPF inválido",
-    }),
+    })),
   convenio_id: z.string().uuid("Selecione um convênio"),
   active: z.boolean().default(true),
 });

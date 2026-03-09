@@ -39,7 +39,7 @@ export async function resetUserPassword(userId: string) {
   if (profile?.role !== "admin") return { error: "Sem permissão" };
 
   const admin = createAdminClient();
-  const newPassword = `FarmaFacil@${new Date().getFullYear()}`;
+  const newPassword = `FF@${crypto.randomUUID().slice(0, 8)}`;
 
   const { error } = await admin.auth.admin.updateUserById(userId, {
     password: newPassword,

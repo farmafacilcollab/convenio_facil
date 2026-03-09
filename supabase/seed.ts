@@ -7,7 +7,12 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://zabfoldmhecxhbehqefa.supabase.co";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+if (!SUPABASE_URL) {
+  console.error("❌ NEXT_PUBLIC_SUPABASE_URL is required. Set it in .env.local");
+  process.exit(1);
+}
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SERVICE_ROLE_KEY) {

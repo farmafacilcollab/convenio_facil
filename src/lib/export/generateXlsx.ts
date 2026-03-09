@@ -36,7 +36,7 @@ export function generateXlsx(data: ExportData): Blob {
     row.conveniadoName,
     row.conveniadoCpf,
     row.saleDate,
-    row.totalValue,
+    formatBRL(row.totalValue),
     row.installments,
     row.status,
   ]);
@@ -47,7 +47,7 @@ export function generateXlsx(data: ExportData): Blob {
     "",
     "",
     "TOTAL:",
-    data.totalValue,
+    formatBRL(data.totalValue),
     "",
     "",
   ];

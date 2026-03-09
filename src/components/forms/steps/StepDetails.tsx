@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { ptBR } from "@/lib/i18n/pt-BR";
 import { maskCurrency, parseBRL } from "@/lib/utils/currency";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Props {
   saleDate: string;
@@ -38,6 +38,14 @@ export function StepDetails({
     }
     return "";
   });
+
+  useEffect(() => {
+    if (totalValue > 0) {
+      setRawCurrency((totalValue * 100).toFixed(0));
+    } else {
+      setRawCurrency("");
+    }
+  }, [totalValue]);
 
   const handleCurrencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/\D/g, "");

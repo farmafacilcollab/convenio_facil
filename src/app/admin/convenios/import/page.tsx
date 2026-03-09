@@ -47,7 +47,7 @@ export default function ImportConveniosPage() {
           valid: result.success,
           error: result.success
             ? undefined
-            : result.error.issues[0]?.message,
+            : result.error?.issues[0]?.message,
         };
       });
 

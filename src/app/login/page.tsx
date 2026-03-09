@@ -61,7 +61,6 @@ export default function LoginPage() {
       } else {
         router.push("/store/dashboard");
       }
-      router.refresh();
     } catch {
       setError(ptBR.genericError);
     } finally {

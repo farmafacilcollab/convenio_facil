@@ -111,8 +111,6 @@ export function useAuth() {
   }, [supabase]);
 
   const signOut = useCallback(async () => {
-    // Clear cached role cookie
-    document.cookie = "x-user-role=; path=/; max-age=0";
     try {
       await supabase.auth.signOut();
     } catch {

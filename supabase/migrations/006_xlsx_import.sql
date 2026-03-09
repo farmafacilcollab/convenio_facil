@@ -18,3 +18,4 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_convenios_cnpj_unique
 -- ============================================
 CREATE INDEX IF NOT EXISTS idx_conveniados_cpf ON public.conveniados(cpf);
 CREATE INDEX IF NOT EXISTS idx_conveniados_active ON public.conveniados(active);
+CREATE INDEX IF NOT EXISTS idx_conveniados_convenio_id ON public.conveniados(convenio_id);

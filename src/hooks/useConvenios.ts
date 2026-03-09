@@ -11,13 +11,18 @@ export function useConvenios() {
 
   const fetchConvenios = useCallback(async () => {
     setIsLoading(true);
-    const { data } = await supabaseRef.current
-      .from("convenios")
-      .select("*")
-      .eq("active", true)
-      .order("company_name");
-    setConvenios(data ?? []);
-    setIsLoading(false);
+    try {
+      const { data } = await supabaseRef.current
+        .from("convenios")
+        .select("*")
+        .eq("active", true)
+        .order("company_name");
+      setConvenios(data ?? []);
+    } catch {
+      setConvenios([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {

@@ -7,6 +7,7 @@ export async function generateZip(data: ExportImageData): Promise<Blob> {
   const zip = new JSZip();
 
   const folder = zip.folder(data.convenioName) ?? zip;
+  let failedCount = 0;
 
   for (const img of data.images) {
     const safeName = img.conveniadoName.replace(/[^a-zA-Z0-9À-ú\s-]/g, "");
@@ -17,13 +18,20 @@ export async function generateZip(data: ExportImageData): Promise<Blob> {
 
     try {
       const response = await fetch(img.signedUrl);
-      if (!response.ok) continue;
+      if (!response.ok) {
+        failedCount++;
+        continue;
+      }
       const blob = await response.blob();
       folder.file(`${subFolder}/${fileName}`, blob);
     } catch {
-      // Skip failed downloads
+      failedCount++;
       continue;
     }
+  }
+
+  if (failedCount > 0 && failedCount === data.images.length) {
+    throw new Error("Falha ao baixar todas as imagens");
   }
 
   return zip.generateAsync({ type: "blob" });
