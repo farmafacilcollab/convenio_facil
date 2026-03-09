@@ -25,6 +25,7 @@ export function generatePdf(data: ExportData): Blob {
     head: [
       [
         "Loja",
+        "Nº Req.",
         "Conveniado",
         "CPF",
         "Data",
@@ -35,6 +36,7 @@ export function generatePdf(data: ExportData): Blob {
     ],
     body: data.rows.map((row) => [
       row.storeName,
+      row.requisitionNumber,
       row.conveniadoName,
       row.conveniadoCpf,
       row.saleDate,

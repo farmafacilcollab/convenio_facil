@@ -112,7 +112,7 @@ export function useAuth() {
 
   const signOut = useCallback(async () => {
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' });
     } catch {
       // Forçar navegação mesmo se signOut falhar
     }

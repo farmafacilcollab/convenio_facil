@@ -22,6 +22,7 @@ export function generateXlsx(data: ExportData): Blob {
   // Table headers
   const tableHeaders = [
     "Loja",
+    "Nº Req.",
     "Conveniado",
     "CPF",
     "Data",
@@ -33,6 +34,7 @@ export function generateXlsx(data: ExportData): Blob {
   // Data rows
   const tableRows = data.rows.map((row) => [
     row.storeName,
+    row.requisitionNumber,
     row.conveniadoName,
     row.conveniadoCpf,
     row.saleDate,
@@ -43,6 +45,7 @@ export function generateXlsx(data: ExportData): Blob {
 
   // Summary row
   const summaryRow = [
+    "",
     "",
     "",
     "",
@@ -65,6 +68,7 @@ export function generateXlsx(data: ExportData): Blob {
   // Column widths
   ws["!cols"] = [
     { wch: 20 }, // Loja
+    { wch: 10 }, // Nº Req.
     { wch: 30 }, // Conveniado
     { wch: 15 }, // CPF
     { wch: 12 }, // Data

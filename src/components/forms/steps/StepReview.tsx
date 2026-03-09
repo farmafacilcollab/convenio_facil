@@ -13,6 +13,7 @@ import type { Convenio, Conveniado, CompressedImage } from "@/lib/types/app.type
 interface Props {
   convenio: Convenio | null;
   conveniado: Conveniado | null;
+  requisitionNumber: string;
   saleDate: string;
   totalValue: number;
   isInstallment: boolean;
@@ -23,6 +24,7 @@ interface Props {
 export function StepReview({
   convenio,
   conveniado,
+  requisitionNumber,
   saleDate,
   totalValue,
   isInstallment,
@@ -59,6 +61,11 @@ export function StepReview({
           </div>
 
           <Separator />
+
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">{ptBR.requisitionNumber}</span>
+            <span className="font-medium">{requisitionNumber}</span>
+          </div>
 
           <div className="flex justify-between">
             <span className="text-muted-foreground">{ptBR.saleDate}</span>

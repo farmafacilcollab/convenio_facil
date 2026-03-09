@@ -170,6 +170,7 @@ export interface Database {
           total_value: number;
           is_installment: boolean;
           installment_count: number | null;
+          requisition_number: string;
           status: "pending" | "exported" | "closed";
           created_by: string;
           created_at: string;
@@ -183,6 +184,7 @@ export interface Database {
           total_value: number;
           is_installment?: boolean;
           installment_count?: number | null;
+          requisition_number: string;
           status?: "pending" | "exported" | "closed";
           created_by: string;
           created_at?: string;
@@ -196,6 +198,7 @@ export interface Database {
           total_value?: number;
           is_installment?: boolean;
           installment_count?: number | null;
+          requisition_number?: string;
           status?: "pending" | "exported" | "closed";
           created_by?: string;
           created_at?: string;

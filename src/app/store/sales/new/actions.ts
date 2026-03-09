@@ -6,6 +6,7 @@ interface SubmitSaleInput {
   store_id: string;
   convenio_id: string;
   conveniado_id: string;
+  requisition_number: string;
   sale_date: string;
   total_value: number;
   is_installment: boolean;
@@ -39,6 +40,7 @@ export async function submitSale(formData: FormData): Promise<{ saleId?: string;
         store_id: input.store_id,
         convenio_id: input.convenio_id,
         conveniado_id: input.conveniado_id,
+        requisition_number: input.requisition_number,
         sale_date: input.sale_date,
         total_value: input.total_value,
         is_installment: input.is_installment,

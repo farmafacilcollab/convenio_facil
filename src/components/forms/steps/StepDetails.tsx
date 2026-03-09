@@ -14,6 +14,8 @@ interface Props {
   onDateChange: (date: string) => void;
   totalValue: number;
   onValueChange: (value: number) => void;
+  requisitionNumber: string;
+  onRequisitionNumberChange: (value: string) => void;
   isInstallment: boolean;
   onInstallmentChange: (value: boolean) => void;
   installmentCount: number | null;
@@ -27,6 +29,8 @@ export function StepDetails({
   onDateChange,
   totalValue,
   onValueChange,
+  requisitionNumber,
+  onRequisitionNumberChange,
   isInstallment,
   onInstallmentChange,
   installmentCount,
@@ -81,6 +85,19 @@ export function StepDetails({
           onChange={handleCurrencyChange}
           placeholder="R$ 0,00"
           className="h-12 text-lg font-semibold"
+        />
+      </div>
+
+      {/* Requisition number */}
+      <div className="space-y-2">
+        <Label>{ptBR.requisitionNumber}</Label>
+        <Input
+          type="text"
+          inputMode="numeric"
+          value={requisitionNumber}
+          onChange={(e) => onRequisitionNumberChange(e.target.value.replace(/\D/g, ""))}
+          placeholder="Ex: 1234"
+          className="h-12"
         />
       </div>
 

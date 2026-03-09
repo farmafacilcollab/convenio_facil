@@ -62,6 +62,7 @@ export const ptBR = {
   searchConveniado: "Buscar conveniado por nome ou CPF...",
   saleDate: "Data da Venda",
   totalValue: "Valor Total",
+  requisitionNumber: "Nº Requisição",
   isInstallment: "Parcelado?",
   installmentCount: "Número de Parcelas",
   capturePhoto: "Fotografar Requisição Assinada",

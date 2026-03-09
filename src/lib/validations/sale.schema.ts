@@ -3,6 +3,10 @@ import { z } from "zod";
 export const saleSchema = z.object({
   convenio_id: z.string().uuid("Selecione um convênio"),
   conveniado_id: z.string().uuid("Selecione um conveniado"),
+  requisition_number: z
+    .string()
+    .min(1, "Número da requisição é obrigatório")
+    .regex(/^\d+$/, "Apenas números"),
   sale_date: z
     .string()
     .min(1, "Data da venda é obrigatória")

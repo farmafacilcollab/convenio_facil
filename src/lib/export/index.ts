@@ -11,6 +11,7 @@ export interface ExportData {
 
 export interface ExportRow {
   saleId: string;
+  requisitionNumber: string;
   storeName: string;
   conveniadoName: string;
   conveniadoCpf: string;

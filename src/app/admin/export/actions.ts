@@ -46,7 +46,7 @@ export async function fetchExportData(
     .from("sales")
     .select(
       `
-      id, sale_date, total_value, is_installment, installment_count, status,
+      id, requisition_number, sale_date, total_value, is_installment, installment_count, status,
       store:stores(name),
       conveniado:conveniados(full_name, cpf),
       sale_images(id, storage_path, installment_number)
@@ -69,6 +69,7 @@ export async function fetchExportData(
 
     return {
       saleId: s.id,
+      requisitionNumber: (s as Record<string, unknown>).requisition_number as string ?? "",
       storeName: store?.name ?? "—",
       conveniadoName: conveniado?.full_name ?? "—",
       conveniadoCpf: conveniado ? maskCPFDisplay(conveniado.cpf) : "—",

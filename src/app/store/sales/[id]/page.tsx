@@ -113,6 +113,10 @@ export default async function SaleDetailPage({
             </div>
             <Separator />
             <div className="flex justify-between">
+              <span className="text-muted-foreground">{ptBR.requisitionNumber}</span>
+              <span className="font-medium">{sale.requisition_number}</span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-muted-foreground">{ptBR.saleDate}</span>
               <span className="font-medium">
                 {format(new Date(sale.sale_date + "T12:00:00"), "dd/MM/yyyy", {

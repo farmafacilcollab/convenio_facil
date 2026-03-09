@@ -46,6 +46,7 @@ export function SaleWizard() {
   const [totalValue, setTotalValue] = useState<number>(0);
   const [isInstallment, setIsInstallment] = useState(false);
   const [installmentCount, setInstallmentCount] = useState<number | null>(null);
+  const [requisitionNumber, setRequisitionNumber] = useState<string>("");
 
   const imageCount = isInstallment && installmentCount ? installmentCount : 1;
   const imageCapture = useImageCapture(imageCount);
@@ -87,7 +88,7 @@ export function SaleWizard() {
       case 1:
         return !!selectedConveniado;
       case 2:
-        return totalValue > 0 && !!saleDate && (!isInstallment || !!installmentCount);
+        return totalValue > 0 && !!saleDate && !!requisitionNumber && (!isInstallment || !!installmentCount);
       case 3:
         return imageCapture.allCaptured;
       default:
@@ -107,6 +108,7 @@ export function SaleWizard() {
         store_id: storeId,
         convenio_id: selectedConvenio.id,
         conveniado_id: selectedConveniado.id,
+        requisition_number: requisitionNumber,
         sale_date: saleDate,
         total_value: totalValue,
         is_installment: isInstallment,
@@ -205,6 +207,8 @@ export function SaleWizard() {
             onDateChange={setSaleDate}
             totalValue={totalValue}
             onValueChange={setTotalValue}
+            requisitionNumber={requisitionNumber}
+            onRequisitionNumberChange={setRequisitionNumber}
             isInstallment={isInstallment}
             onInstallmentChange={handleInstallmentChange}
             installmentCount={installmentCount}
@@ -222,6 +226,7 @@ export function SaleWizard() {
           <StepReview
             convenio={selectedConvenio}
             conveniado={selectedConveniado}
+            requisitionNumber={requisitionNumber}
             saleDate={saleDate}
             totalValue={totalValue}
             isInstallment={isInstallment}

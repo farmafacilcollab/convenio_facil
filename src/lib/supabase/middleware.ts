@@ -38,7 +38,14 @@ export async function updateSession(request: NextRequest) {
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    return NextResponse.redirect(url);
+    const response = NextResponse.redirect(url);
+    response.cookies.delete("x-user-role");
+    return response;
+  }
+
+  if (!user && isPublicRoute) {
+    // Clear stale role cookie for unauthenticated users
+    supabaseResponse.cookies.delete("x-user-role");
   }
 
   if (user) {

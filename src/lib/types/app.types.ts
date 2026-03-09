@@ -25,6 +25,7 @@ export type ConveniadoWithConvenio = Conveniado & {
 export type SaleFormData = {
   convenio_id: string;
   conveniado_id: string;
+  requisition_number: string;
   sale_date: string;
   total_value: number;
   is_installment: boolean;
