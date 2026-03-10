@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type ValidRow = { full_name: string; cpf?: string; cnpj?: string };
+type ValidRow = { full_name: string; cpf?: string; cnpj?: string; cnpjPartial?: boolean };
 
 type Step = "upload" | "preview" | "result";
 
@@ -36,6 +36,8 @@ const MAX_ROWS = 5000;
 const ACCEPTED_EXTENSIONS = [".csv", ".xlsx", ".xls", ".txt"];
 
 const CPF_REGEX = /\d{3}\.\d{3}\.\d{3}-\d{2}/;
+// CNPJ completo ou parcial (WebPharma exporta sem os últimos dígitos)
+const CNPJ_REGEX = /\d{2}\.\d{3}\.\d{3}\/\d{3,4}(?:-\d{2})?/;
 
 function normalizeForCompare(value: string): string {
   return value
@@ -58,7 +60,7 @@ function parseTxtWebPharma(text: string): {
   let convenioName = "";
   const rows: ValidRow[] = [];
   let ignored = 0;
-  const seenCpfs = new Set<string>();
+  const seenDocs = new Set<string>();
 
   // Encontrar separador de traços (----) para pular cabeçalho
   let dataStart = 0;
@@ -79,15 +81,21 @@ function parseTxtWebPharma(text: string): {
     if (/^={3,}/.test(trimmed)) continue;
     if (/Registros Listados/i.test(trimmed)) continue;
 
-    // Linha do convênio: tem "ATIVO" mas não tem CPF
-    if (/\bATIVO\b/i.test(trimmed) && !CPF_REGEX.test(trimmed)) {
+    // Linha do convênio: tem "ATIVO" mas não tem CPF nem CNPJ
+    if (
+      /\bATIVO\b/i.test(trimmed) &&
+      !CPF_REGEX.test(trimmed) &&
+      !CNPJ_REGEX.test(trimmed)
+    ) {
       const name = trimmed.split(/\s{2,}/)[0].trim();
       if (name && !convenioName) convenioName = name;
       continue;
     }
 
-    // Linha de conveniado: contém CPF no formato XXX.XXX.XXX-XX
+    // Linha de conveniado: contém CPF (XXX.XXX.XXX-XX) ou CNPJ (XX.XXX.XXX/XXXX-XX ou parcial)
     const cpfMatch = trimmed.match(CPF_REGEX);
+    const cnpjMatch = trimmed.match(CNPJ_REGEX);
+
     if (cpfMatch) {
       const cpfRaw = cpfMatch[0].replace(/\D/g, "");
       const ativoIdx = trimmed.indexOf("ATIVO");
@@ -98,10 +106,27 @@ function parseTxtWebPharma(text: string): {
 
       if (!validateCPF(cpfRaw)) { ignored++; continue; }
       if (fullName.length < 2) { ignored++; continue; }
-      if (seenCpfs.has(cpfRaw)) { ignored++; continue; }
-      seenCpfs.add(cpfRaw);
+      if (seenDocs.has(`cpf:${cpfRaw}`)) { ignored++; continue; }
+      seenDocs.add(`cpf:${cpfRaw}`);
 
       rows.push({ full_name: fullName, cpf: cpfRaw });
+    } else if (cnpjMatch) {
+      const cnpjRaw = cnpjMatch[0].replace(/\D/g, "");
+      const ativoIdx = trimmed.indexOf("ATIVO");
+      const fullName =
+        ativoIdx > 0
+          ? trimmed.substring(0, ativoIdx).trim()
+          : trimmed.substring(0, trimmed.indexOf(cnpjMatch[0])).trim();
+
+      if (fullName.length < 2) { ignored++; continue; }
+      if (seenDocs.has(`cnpj:${cnpjRaw}`)) { ignored++; continue; }
+      seenDocs.add(`cnpj:${cnpjRaw}`);
+
+      // CNPJ parcial (WebPharma exporta truncado): armazenar e sinalizar
+      const isPartial = cnpjRaw.length < 14;
+      if (!isPartial && !validateCNPJ(cnpjRaw)) { ignored++; continue; }
+
+      rows.push({ full_name: fullName, cnpj: cnpjRaw, cnpjPartial: isPartial });
     }
   }
 
@@ -112,9 +137,9 @@ function downloadCsvTemplate() {
   const BOM = "\uFEFF";
   const content =
     BOM +
-    "Convênio;Nome Completo;CPF\n" +
+    "Convênio;Nome Completo;CPF ou CNPJ\n" +
     "FARMAFACIL;MARIA DA SILVA;123.456.789-09\n" +
-    "FARMAFACIL;JOSE DOS SANTOS;987.654.321-00\n";
+    "FARMAFACIL;JOSE DOS SANTOS;12.345.678/0001-90\n";
   const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -127,9 +152,9 @@ function downloadCsvTemplate() {
 function downloadXlsxTemplate() {
   const wb = XLSX.utils.book_new();
   const data = [
-    ["Convênio", "Nome Completo", "CPF"],
+    ["Convênio", "Nome Completo", "CPF ou CNPJ"],
     ["FARMAFACIL", "MARIA DA SILVA", "123.456.789-09"],
-    ["FARMAFACIL", "JOSE DOS SANTOS", "987.654.321-00"],
+    ["FARMAFACIL", "JOSE DOS SANTOS", "12.345.678/0001-90"],
   ];
   const ws = XLSX.utils.aoa_to_sheet(data);
   ws["!cols"] = [{ wch: 20 }, { wch: 35 }, { wch: 18 }];
@@ -213,23 +238,34 @@ export default function ImportConveniadosXlsxPage() {
 
       const valid: ValidRow[] = [];
       let ignored = 0;
-      const seenCpfs = new Set<string>();
+      const seenDocs = new Set<string>();
 
       for (const line of dataLines) {
         const parts = line.split(";");
         const rowConvenio = normalizeForCompare(parts[0]?.trim() ?? "");
         const fullName = parts[1]?.trim() ?? "";
-        const cpfRaw = (parts[2]?.trim() ?? "").replace(/\D/g, "");
+        const docRaw = (parts[2]?.trim() ?? "").replace(/\D/g, "");
 
         if (rowConvenio && rowConvenio !== firstConvenio) {
           toast.error(ptBR.xlsxErrorMultipleConvenios);
           return;
         }
-        if (!cpfRaw || !validateCPF(cpfRaw)) { ignored++; continue; }
+        if (!docRaw) { ignored++; continue; }
         if (fullName.length < 2) { ignored++; continue; }
-        if (seenCpfs.has(cpfRaw)) { ignored++; continue; }
-        seenCpfs.add(cpfRaw);
-        valid.push({ full_name: fullName, cpf: cpfRaw });
+
+        if (docRaw.length === 11) {
+          if (!validateCPF(docRaw)) { ignored++; continue; }
+          if (seenDocs.has(`cpf:${docRaw}`)) { ignored++; continue; }
+          seenDocs.add(`cpf:${docRaw}`);
+          valid.push({ full_name: fullName, cpf: docRaw });
+        } else if (docRaw.length === 14) {
+          if (!validateCNPJ(docRaw)) { ignored++; continue; }
+          if (seenDocs.has(`cnpj:${docRaw}`)) { ignored++; continue; }
+          seenDocs.add(`cnpj:${docRaw}`);
+          valid.push({ full_name: fullName, cnpj: docRaw });
+        } else {
+          ignored++;
+        }
       }
 
       if (valid.length === 0) {
@@ -290,18 +326,28 @@ export default function ImportConveniadosXlsxPage() {
 
       const valid: ValidRow[] = [];
       let ignored = 0;
-      const seenCpfs = new Set<string>();
+      const seenDocs = new Set<string>();
 
       for (const row of dataRows) {
         const fullName = String(row[1] ?? "").trim();
-        const cpfRaw = String(row[2] ?? "").replace(/\D/g, "");
+        const docRaw = String(row[2] ?? "").replace(/\D/g, "");
 
-        if (!cpfRaw || !validateCPF(cpfRaw)) { ignored++; continue; }
+        if (!docRaw) { ignored++; continue; }
         if (fullName.length < 2) { ignored++; continue; }
-        if (seenCpfs.has(cpfRaw)) { ignored++; continue; }
-        seenCpfs.add(cpfRaw);
 
-        valid.push({ full_name: fullName, cpf: cpfRaw });
+        if (docRaw.length === 11) {
+          if (!validateCPF(docRaw)) { ignored++; continue; }
+          if (seenDocs.has(`cpf:${docRaw}`)) { ignored++; continue; }
+          seenDocs.add(`cpf:${docRaw}`);
+          valid.push({ full_name: fullName, cpf: docRaw });
+        } else if (docRaw.length === 14) {
+          if (!validateCNPJ(docRaw)) { ignored++; continue; }
+          if (seenDocs.has(`cnpj:${docRaw}`)) { ignored++; continue; }
+          seenDocs.add(`cnpj:${docRaw}`);
+          valid.push({ full_name: fullName, cnpj: docRaw });
+        } else {
+          ignored++;
+        }
       }
 
       if (valid.length === 0) {
@@ -500,7 +546,7 @@ export default function ImportConveniadosXlsxPage() {
                 <p className="text-xs text-muted-foreground">
                   Separador: ponto-e-vírgula (;)
                   <br />
-                  Colunas: Convênio, Nome Completo, CPF
+                  Colunas: Convênio, Nome Completo, CPF ou CNPJ
                 </p>
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
@@ -524,7 +570,7 @@ export default function ImportConveniadosXlsxPage() {
                   📊 Planilha Excel
                 </CardTitle>
                 <p className="text-xs text-muted-foreground">
-                  Colunas: Convênio, Nome Completo, CPF
+                  Colunas: Convênio, Nome Completo, CPF ou CNPJ
                   <br />
                   Formatos: .xlsx, .xls
                 </p>
@@ -626,6 +672,11 @@ export default function ImportConveniadosXlsxPage() {
                   ⚠️ {ignoredCount} {ptBR.xlsxIgnored}
                 </p>
               )}
+              {validRows.some((r) => r.cnpjPartial) && (
+                <p className="text-xs text-orange-600">
+                  ⚠️ {validRows.filter((r) => r.cnpjPartial).length} registro(s) com CNPJ incompleto (exportação WebPharma). Edite o CNPJ completo após a importação.
+                </p>
+              )}
             </CardHeader>
             <CardContent>
               <div className="max-h-80 overflow-y-auto">
@@ -640,7 +691,15 @@ export default function ImportConveniadosXlsxPage() {
                     {validRows.slice(0, 100).map((row, i) => (
                       <tr key={i} className="border-b">
                         <td className="py-2">{row.full_name}</td>
-                        <td className="py-2">{row.cpf ? maskCPFDisplay(row.cpf) : row.cnpj ? formatCNPJ(row.cnpj) : "N/A"}</td>
+                        <td className="py-2">
+                          {row.cpf
+                            ? maskCPFDisplay(row.cpf)
+                            : row.cnpj
+                              ? row.cnpjPartial
+                                ? <span className="text-orange-600" title="CNPJ incompleto">{row.cnpj} ⚠️</span>
+                                : formatCNPJ(row.cnpj)
+                              : "N/A"}
+                        </td>
                       </tr>
                     ))}
                     {validRows.length > 100 && (

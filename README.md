@@ -18,8 +18,9 @@ Sistema de controle de vendas por convênio para a rede de farmácias FarmaFáci
 
 ### Painel Administrativo
 - Dashboard com indicadores globais e ranking de lojas
-- CRUD de convênios e conveniados
-- Importação em massa via CSV (convênios e conveniados)
+- CRUD de convênios e conveniados (identificação por CPF ou CNPJ)
+- Importação em massa via CSV, XLSX ou TXT WebPharma (convênios e conveniados)
+- Suporte a CNPJ para conveniados (empresas que compram pelo CNPJ)
 - Gestão de lojas e usuários
 - Central de exportação (PDF, XLSX, ZIP de fotos)
 
