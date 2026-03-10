@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { createBrowserClient } from "@supabase/ssr";
-import type { Database } from "@/lib/types/database.types";
-import type { Convenio, ExportType } from "@/lib/types/app.types";
+import { useState } from "react";
+import type { ExportType } from "@/lib/types/app.types";
 import type { ExportData, ExportImageData } from "@/lib/export";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,11 +22,10 @@ import { generateZip } from "@/lib/export/generateZip";
 import { ptBR } from "@/lib/i18n/pt-BR";
 import { toast } from "sonner";
 import { saveAs } from "file-saver";
+import { useConvenios } from "@/hooks/useConvenios";
 
 export default function ExportPage() {
-  const [convenios, setConvenios] = useState<
-    Pick<Convenio, "id" | "company_name">[]
-  >([]);
+  const { convenios, isLoading: isLoadingConvenios } = useConvenios();
   const [convenioId, setConvenioId] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -36,24 +33,6 @@ export default function ExportPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [preview, setPreview] = useState<ExportData | null>(null);
   const [imageCount, setImageCount] = useState(0);
-
-  const supabase = createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  const fetchConvenios = useCallback(async () => {
-    const { data } = await supabase
-      .from("convenios")
-      .select("id, company_name")
-      .eq("active", true)
-      .order("company_name");
-    setConvenios(data ?? []);
-  }, [supabase]);
-
-  useEffect(() => {
-    fetchConvenios();
-  }, [fetchConvenios]);
 
   const handleExport = async () => {
     if (!convenioId || !dateFrom || !dateTo) {
@@ -119,8 +98,8 @@ export default function ExportPage() {
           <div className="space-y-2">
             <Label>{ptBR.convenio}</Label>
             <Select value={convenioId} onValueChange={setConvenioId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o convênio" />
+              <SelectTrigger disabled={isLoadingConvenios}>
+                <SelectValue placeholder={isLoadingConvenios ? "Carregando..." : "Selecione o convênio"} />
               </SelectTrigger>
               <SelectContent>
                 {convenios.map((c) => (
