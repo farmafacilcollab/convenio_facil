@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ptBR } from "@/lib/i18n/pt-BR";
 import { validateCPF, maskCPFDisplay } from "@/lib/utils/cpf";
+import { validateCNPJ, formatCNPJ } from "@/lib/utils/cnpj";
 import {
   previewSyncConveniados,
   executeSyncConveniados,
@@ -26,7 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type ValidRow = { full_name: string; cpf: string };
+type ValidRow = { full_name: string; cpf?: string; cnpj?: string };
 
 type Step = "upload" | "preview" | "result";
 

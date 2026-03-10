@@ -30,6 +30,7 @@ import {
   toggleConveniadoActive,
 } from "./actions";
 import { maskCPFDisplay } from "@/lib/utils/cpf";
+import { maskCNPJ, formatCNPJ } from "@/lib/utils/cnpj";
 import { ptBR } from "@/lib/i18n/pt-BR";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -67,9 +68,12 @@ export default function ConveniadosPage() {
   }, [fetchConveniados]);
 
   const filtered = conveniados.filter(
-    (c) =>
-      c.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      c.cpf.includes(search.replace(/\D/g, ""))
+    (c) => {
+      const nameMatch = c.full_name.toLowerCase().includes(search.toLowerCase());
+      const cpfMatch = c.cpf?.includes(search.replace(/\D/g, "")) ?? false;
+      const cnpjMatch = c.cnpj?.includes(search.replace(/\D/g, "")) ?? false;
+      return nameMatch || cpfMatch || cnpjMatch;
+    }
   );
 
   const handleCreate = async (data: ConveniadoFormData) => {
@@ -77,6 +81,7 @@ export default function ConveniadosPage() {
     const result = await createConveniado({
       full_name: data.full_name,
       cpf: data.cpf,
+      cnpj: data.cnpj,
       convenio_id: data.convenio_id,
     });
     setIsLoading(false);
@@ -96,6 +101,7 @@ export default function ConveniadosPage() {
     const result = await updateConveniado(editItem.id, {
       full_name: data.full_name,
       cpf: data.cpf,
+      cnpj: data.cnpj,
       convenio_id: data.convenio_id,
     });
     setIsLoading(false);
@@ -149,7 +155,7 @@ export default function ConveniadosPage() {
 
       <div className="flex flex-wrap gap-3">
         <Input
-          placeholder="Buscar por nome ou CPF..."
+          placeholder="Buscar por nome, CPF ou CNPJ..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
@@ -188,7 +194,7 @@ export default function ConveniadosPage() {
                 <div>
                   <p className="font-medium">{c.full_name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {maskCPFDisplay(c.cpf)}
+                    {c.cpf ? maskCPFDisplay(c.cpf) : c.cnpj ? formatCNPJ(c.cnpj) : "N/A"}
                     {c.convenio && (
                       <span> • {c.convenio.company_name}</span>
                     )}
@@ -230,7 +236,8 @@ export default function ConveniadosPage() {
               convenios={convenios}
               defaultValues={{
                 full_name: editItem.full_name,
-                cpf: editItem.cpf,
+                cpf: editItem.cpf || undefined,
+                cnpj: editItem.cnpj || undefined,
                 convenio_id: editItem.convenio_id,
               }}
               onSubmit={handleUpdate}

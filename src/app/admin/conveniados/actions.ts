@@ -41,14 +41,20 @@ export async function fetchConveniosList(): Promise<Pick<Convenio, "id" | "compa
 
 export async function createConveniado(formData: {
   full_name: string;
-  cpf: string;
+  cpf?: string;
+  cnpj?: string;
   convenio_id: string;
 }) {
   const supabase = await createClient();
 
+  const cpf = formData.cpf?.replace(/\D/g, "") || "";
+  const cnpj = formData.cnpj?.replace(/\D/g, "") || "";
+
   const parsed = conveniadoSchema.safeParse({
-    ...formData,
-    cpf: formData.cpf.replace(/\D/g, ""),
+    full_name: formData.full_name,
+    cpf: cpf,
+    cnpj: cnpj,
+    convenio_id: formData.convenio_id,
     active: true,
   });
   if (!parsed.success) {
@@ -60,16 +66,20 @@ export async function createConveniado(formData: {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Não autenticado" };
 
-  const { error } = await supabase.from("conveniados").insert({
+  const insertData: Record<string, unknown> = {
     full_name: parsed.data.full_name,
-    cpf: parsed.data.cpf,
     convenio_id: parsed.data.convenio_id,
     active: true,
     created_by: user.id,
-  });
+  };
+
+  if (cpf) insertData.cpf = cpf;
+  if (cnpj) insertData.cnpj = cnpj;
+
+  const { error } = await supabase.from("conveniados").insert(insertData);
 
   if (error) {
-    if (error.code === "23505") return { error: "CPF já cadastrado" };
+    if (error.code === "23505") return { error: "CPF ou CNPJ já cadastrado" };
     return { error: "Erro ao criar conveniado" };
   }
 
@@ -79,30 +89,44 @@ export async function createConveniado(formData: {
 
 export async function updateConveniado(
   id: string,
-  formData: { full_name: string; cpf: string; convenio_id: string }
+  formData: { full_name: string; cpf?: string; cnpj?: string; convenio_id: string }
 ) {
   const supabase = await createClient();
 
+  const cpf = formData.cpf?.replace(/\D/g, "") || "";
+  const cnpj = formData.cnpj?.replace(/\D/g, "") || "";
+
   const parsed = conveniadoSchema.safeParse({
-    ...formData,
-    cpf: formData.cpf.replace(/\D/g, ""),
+    full_name: formData.full_name,
+    cpf: cpf,
+    cnpj: cnpj,
+    convenio_id: formData.convenio_id,
     active: true,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
 
+  const updateData: Record<string, unknown> = {
+    full_name: parsed.data.full_name,
+    convenio_id: parsed.data.convenio_id,
+  };
+
+  if (cpf) {
+    updateData.cpf = cpf;
+    updateData.cnpj = null;
+  } else if (cnpj) {
+    updateData.cnpj = cnpj;
+    updateData.cpf = null;
+  }
+
   const { error } = await supabase
     .from("conveniados")
-    .update({
-      full_name: parsed.data.full_name,
-      cpf: parsed.data.cpf,
-      convenio_id: parsed.data.convenio_id,
-    })
+    .update(updateData)
     .eq("id", id);
 
   if (error) {
-    if (error.code === "23505") return { error: "CPF já cadastrado" };
+    if (error.code === "23505") return { error: "CPF ou CNPJ já cadastrado" };
     return { error: "Erro ao atualizar conveniado" };
   }
 
@@ -125,7 +149,7 @@ export async function toggleConveniadoActive(id: string, active: boolean) {
 }
 
 export async function importConveniados(
-  rows: { full_name: string; cpf: string; convenio_id: string }[]
+  rows: { full_name: string; cpf?: string; cnpj?: string; convenio_id: string }[]
 ) {
   const supabase = await createClient();
 
@@ -138,11 +162,13 @@ export async function importConveniados(
   let errors = 0;
 
   for (const row of rows) {
-    const cpf = row.cpf.replace(/\D/g, "");
+    const cpf = row.cpf?.replace(/\D/g, "") || "";
+    const cnpj = row.cnpj?.replace(/\D/g, "") || "";
 
     const parsed = conveniadoSchema.safeParse({
       full_name: row.full_name.trim(),
       cpf,
+      cnpj,
       convenio_id: row.convenio_id,
       active: true,
     });
@@ -151,16 +177,21 @@ export async function importConveniados(
       continue;
     }
 
-    const { error } = await supabase.from("conveniados").upsert(
-      {
-        full_name: parsed.data.full_name,
-        cpf: parsed.data.cpf,
-        convenio_id: parsed.data.convenio_id,
-        active: true,
-        created_by: user.id,
-      },
-      { onConflict: "cpf" }
-    );
+    const upsertData: Record<string, unknown> = {
+      full_name: parsed.data.full_name,
+      convenio_id: parsed.data.convenio_id,
+      active: true,
+      created_by: user.id,
+    };
+
+    if (cpf) upsertData.cpf = cpf;
+    if (cnpj) upsertData.cnpj = cnpj;
+
+    const onConflict = cpf ? "cpf" : "cnpj";
+
+    const { error } = await supabase.from("conveniados").upsert(upsertData, {
+      onConflict,
+    });
 
     if (error) errors++;
     else imported++;
@@ -174,7 +205,7 @@ export async function importConveniados(
 // XLSX Import — Sincronização por convênio
 // ============================================
 
-type SyncRow = { full_name: string; cpf: string };
+type SyncRow = { full_name: string; cpf?: string; cnpj?: string };
 
 const BATCH_SIZE = 300;
 
@@ -255,54 +286,69 @@ export async function previewSyncConveniados(
   const convenioFound = matched.length === 1;
   const convenioId = convenioFound ? matched[0].id : null;
 
-  // Mapear CPFs recebidos
-  const cpfMap = new Map<string, string>(); // cpf -> full_name
+  // Mapear documentos recebidos (CPF ou CNPJ)
+  const docMap = new Map<string, { full_name: string; type: "cpf" | "cnpj" }>(); // doc -> { full_name, type }
   const ignored: string[] = [];
 
   for (const row of rows) {
-    const cpf = row.cpf.replace(/\D/g, "");
-    if (cpfMap.has(cpf)) {
-      ignored.push(`CPF ${cpf} duplicado na planilha`);
+    const cpf = row.cpf?.replace(/\D/g, "") || "";
+    const cnpj = row.cnpj?.replace(/\D/g, "") || "";
+
+    if (!cpf && !cnpj) {
+      ignored.push(`Linha sem CPF ou CNPJ: ${row.full_name}`);
       continue;
     }
-    cpfMap.set(cpf, row.full_name.trim());
+
+    if (cpf && cnpj) {
+      ignored.push(`Linha com CPF e CNPJ simultâneos: ${row.full_name}`);
+      continue;
+    }
+
+    const doc = cpf || cnpj;
+    const type = cpf ? ("cpf" as const) : ("cnpj" as const);
+
+    if (docMap.has(doc)) {
+      ignored.push(`${type.toUpperCase()} ${doc} duplicado na planilha`);
+      continue;
+    }
+    docMap.set(doc, { full_name: row.full_name.trim(), type });
   }
 
-  const cpfsRecebidos = new Set(cpfMap.keys());
+  const docsRecebidos = new Set(docMap.keys());
 
   // Se convênio já existe, buscar conveniados atuais
-  let existingMap = new Map<string, { id: string; full_name: string; active: boolean }>();
+  let existingMap = new Map<string, { id: string; cpf?: string; cnpj?: string; full_name: string; active: boolean }>();
   if (convenioId) {
     const { data: existing } = await supabase
       .from("conveniados")
-      .select("id, cpf, full_name, active")
+      .select("id, cpf, cnpj, full_name, active")
       .eq("convenio_id", convenioId);
 
     for (const c of existing ?? []) {
-      existingMap.set(c.cpf, { id: c.id, full_name: c.full_name, active: c.active });
+      if (c.cpf) existingMap.set(c.cpf, { id: c.id, cpf: c.cpf, full_name: c.full_name, active: c.active });
+      if (c.cnpj) existingMap.set(c.cnpj, { id: c.id, cnpj: c.cnpj, full_name: c.full_name, active: c.active });
     }
   }
 
-  // Verificar CPFs que existem em OUTROS convênios
-  if (cpfsRecebidos.size > 0) {
-    const cpfArray = Array.from(cpfsRecebidos);
-    const otherConveniados = await batchSelectIn<{ cpf: string; convenio_id: string }>(
-      supabase, "conveniados", "cpf, convenio_id", "cpf", cpfArray,
+  // Verificar documentos que existem em OUTROS convênios
+  if (docsRecebidos.size > 0) {
+    const docArray = Array.from(docsRecebidos);
+    const otherConveniados = await batchSelectIn<{ cpf?: string; cnpj?: string; convenio_id: string }>(
+      supabase, "conveniados", "cpf, cnpj, convenio_id", "cpf", docArray,
     );
 
     for (const c of otherConveniados) {
       if (convenioId && c.convenio_id === convenioId) continue;
-      if (!convenioId || c.convenio_id !== convenioId) {
-        if (cpfsRecebidos.has(c.cpf) && !existingMap.has(c.cpf)) {
-          ignored.push(`CPF ${c.cpf} já vinculado a outro convênio`);
-          cpfsRecebidos.delete(c.cpf);
-          cpfMap.delete(c.cpf);
-        }
+      const doc = c.cpf || c.cnpj;
+      if (doc && docsRecebidos.has(doc) && !existingMap.has(doc)) {
+        ignored.push(`${c.cpf ? "CPF" : "CNPJ"} ${doc} já vinculado a outro convênio`);
+        docsRecebidos.delete(doc);
+        docMap.delete(doc);
       }
     }
   }
 
-  const cpfsExistentes = new Set(existingMap.keys());
+  const docsExistentes = new Set(existingMap.keys());
 
   // Calcular diff
   let toAdd = 0;
@@ -310,20 +356,20 @@ export async function previewSyncConveniados(
   let toReactivate = 0;
   let toDeactivate = 0;
 
-  for (const cpf of cpfsRecebidos) {
-    const existing = existingMap.get(cpf);
+  for (const doc of docsRecebidos) {
+    const existing = existingMap.get(doc);
     if (!existing) {
       toAdd++;
     } else {
       if (!existing.active) toReactivate++;
-      const newName = cpfMap.get(cpf)!;
-      if (existing.full_name !== newName) toUpdate++;
+      const newInfo = docMap.get(doc)!;
+      if (existing.full_name !== newInfo.full_name) toUpdate++;
     }
   }
 
-  for (const cpf of cpfsExistentes) {
-    if (!cpfsRecebidos.has(cpf)) {
-      const existing = existingMap.get(cpf)!;
+  for (const doc of docsExistentes) {
+    if (!docsRecebidos.has(doc)) {
+      const existing = existingMap.get(doc)!;
       if (existing.active) toDeactivate++;
     }
   }
@@ -411,32 +457,48 @@ export async function executeSyncConveniados(
     convenioId = newConvenio.id;
   }
 
-  // Mapear CPFs recebidos (deduplicar)
-  const cpfMap = new Map<string, string>();
+  // Mapear documentos recebidos (deduplicar)
+  const docMap = new Map<string, { full_name: string; type: "cpf" | "cnpj" }>();
   const ignored: string[] = [];
 
   for (const row of rows) {
-    const cpf = row.cpf.replace(/\D/g, "");
-    if (cpfMap.has(cpf)) {
-      ignored.push(`CPF ${cpf} duplicado na planilha`);
+    const cpf = row.cpf?.replace(/\D/g, "") || "";
+    const cnpj = row.cnpj?.replace(/\D/g, "") || "";
+
+    if (!cpf && !cnpj) {
+      ignored.push(`Linha sem CPF ou CNPJ: ${row.full_name}`);
       continue;
     }
-    cpfMap.set(cpf, row.full_name.trim());
+
+    if (cpf && cnpj) {
+      ignored.push(`Linha com CPF e CNPJ simultâneos: ${row.full_name}`);
+      continue;
+    }
+
+    const doc = cpf || cnpj;
+    const type = cpf ? ("cpf" as const) : ("cnpj" as const);
+
+    if (docMap.has(doc)) {
+      ignored.push(`${type.toUpperCase()} ${doc} duplicado na planilha`);
+      continue;
+    }
+    docMap.set(doc, { full_name: row.full_name.trim(), type });
   }
 
-  const cpfsRecebidos = new Set(cpfMap.keys());
+  const docsRecebidos = new Set(docMap.keys());
 
-  // Verificar CPFs em outros convênios
-  if (cpfsRecebidos.size > 0) {
-    const otherConveniados = await batchSelectIn<{ cpf: string; convenio_id: string }>(
-      supabase, "conveniados", "cpf, convenio_id", "cpf", Array.from(cpfsRecebidos),
+  // Verificar documentos em outros convênios
+  if (docsRecebidos.size > 0) {
+    const otherConveniados = await batchSelectIn<{ cpf?: string; cnpj?: string; convenio_id: string }>(
+      supabase, "conveniados", "cpf, cnpj, convenio_id", "cpf", Array.from(docsRecebidos),
     );
 
     for (const c of otherConveniados) {
-      if (c.convenio_id !== convenioId && cpfsRecebidos.has(c.cpf)) {
-        ignored.push(`CPF ${c.cpf} já vinculado a outro convênio`);
-        cpfsRecebidos.delete(c.cpf);
-        cpfMap.delete(c.cpf);
+      const doc = c.cpf || c.cnpj;
+      if (doc && c.convenio_id !== convenioId && docsRecebidos.has(doc)) {
+        ignored.push(`${c.cpf ? "CPF" : "CNPJ"} ${doc} já vinculado a outro convênio`);
+        docsRecebidos.delete(doc);
+        docMap.delete(doc);
       }
     }
   }
@@ -444,12 +506,13 @@ export async function executeSyncConveniados(
   // Buscar conveniados existentes do convênio
   const { data: existing } = await supabase
     .from("conveniados")
-    .select("id, cpf, full_name, active")
+    .select("id, cpf, cnpj, full_name, active")
     .eq("convenio_id", convenioId);
 
-  const existingMap = new Map<string, { id: string; full_name: string; active: boolean }>();
+  const existingMap = new Map<string, { id: string; cpf?: string; cnpj?: string; full_name: string; active: boolean }>();
   for (const c of existing ?? []) {
-    existingMap.set(c.cpf, { id: c.id, full_name: c.full_name, active: c.active });
+    if (c.cpf) existingMap.set(c.cpf, { id: c.id, cpf: c.cpf, full_name: c.full_name, active: c.active });
+    if (c.cnpj) existingMap.set(c.cnpj, { id: c.id, cnpj: c.cnpj, full_name: c.full_name, active: c.active });
   }
 
   let added = 0;
@@ -458,24 +521,30 @@ export async function executeSyncConveniados(
   let deactivated = 0;
 
   // ADICIONAR + ATUALIZAR + REATIVAR
-  for (const [cpf, fullName] of cpfMap) {
-    if (!cpfsRecebidos.has(cpf)) continue; // foi removido por conflito
+  for (const [doc, docInfo] of docMap) {
+    if (!docsRecebidos.has(doc)) continue; // foi removido por conflito
 
-    const ex = existingMap.get(cpf);
+    const ex = existingMap.get(doc);
     if (!ex) {
       // INSERT novo conveniado
-      const { error } = await supabase.from("conveniados").insert({
-        full_name: fullName,
-        cpf,
+      const insertData: Record<string, unknown> = {
+        full_name: docInfo.full_name,
         convenio_id: convenioId,
         active: true,
         created_by: user.id,
-      });
+      };
+      if (docInfo.type === "cpf") {
+        insertData.cpf = doc;
+      } else {
+        insertData.cnpj = doc;
+      }
+
+      const { error } = await supabase.from("conveniados").insert(insertData);
       if (!error) added++;
-      else ignored.push(`Erro ao inserir CPF ${cpf}: ${error.message}`);
+      else ignored.push(`Erro ao inserir ${docInfo.type.toUpperCase()} ${doc}: ${error?.message}`);
     } else {
       const updates: Record<string, unknown> = {};
-      if (ex.full_name !== fullName) updates.full_name = fullName;
+      if (ex.full_name !== docInfo.full_name) updates.full_name = docInfo.full_name;
       if (!ex.active) updates.active = true;
 
       if (Object.keys(updates).length > 0) {
@@ -485,15 +554,15 @@ export async function executeSyncConveniados(
           .eq("id", ex.id);
         if (!error) {
           if (!ex.active) reactivated++;
-          if (ex.full_name !== fullName) updated++;
+          if (ex.full_name !== docInfo.full_name) updated++;
         }
       }
     }
   }
 
   // DESATIVAR — conveniados que não estão mais na planilha
-  for (const [cpf, ex] of existingMap) {
-    if (!cpfsRecebidos.has(cpf) && ex.active) {
+  for (const [doc, ex] of existingMap) {
+    if (!docsRecebidos.has(doc) && ex.active) {
       const { error } = await supabase
         .from("conveniados")
         .update({ active: false })
