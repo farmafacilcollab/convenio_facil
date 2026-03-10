@@ -332,10 +332,22 @@ export async function previewSyncConveniados(
 
   // Verificar documentos que existem em OUTROS convênios
   if (docsRecebidos.size > 0) {
-    const docArray = Array.from(docsRecebidos);
-    const otherConveniados = await batchSelectIn<{ cpf?: string; cnpj?: string; convenio_id: string }>(
-      supabase, "conveniados", "cpf, cnpj, convenio_id", "cpf", docArray,
-    );
+    const cpfDocs = Array.from(docMap.entries()).filter(([, v]) => v.type === "cpf").map(([k]) => k);
+    const cnpjDocs = Array.from(docMap.entries()).filter(([, v]) => v.type === "cnpj").map(([k]) => k);
+
+    const otherConveniados: { cpf?: string; cnpj?: string; convenio_id: string }[] = [];
+    if (cpfDocs.length > 0) {
+      const res = await batchSelectIn<{ cpf?: string; cnpj?: string; convenio_id: string }>(
+        supabase, "conveniados", "cpf, cnpj, convenio_id", "cpf", cpfDocs,
+      );
+      otherConveniados.push(...res);
+    }
+    if (cnpjDocs.length > 0) {
+      const res = await batchSelectIn<{ cpf?: string; cnpj?: string; convenio_id: string }>(
+        supabase, "conveniados", "cpf, cnpj, convenio_id", "cnpj", cnpjDocs,
+      );
+      otherConveniados.push(...res);
+    }
 
     for (const c of otherConveniados) {
       if (convenioId && c.convenio_id === convenioId) continue;
@@ -489,9 +501,22 @@ export async function executeSyncConveniados(
 
   // Verificar documentos em outros convênios
   if (docsRecebidos.size > 0) {
-    const otherConveniados = await batchSelectIn<{ cpf?: string; cnpj?: string; convenio_id: string }>(
-      supabase, "conveniados", "cpf, cnpj, convenio_id", "cpf", Array.from(docsRecebidos),
-    );
+    const cpfDocs = Array.from(docMap.entries()).filter(([, v]) => v.type === "cpf").map(([k]) => k);
+    const cnpjDocs = Array.from(docMap.entries()).filter(([, v]) => v.type === "cnpj").map(([k]) => k);
+
+    const otherConveniados: { cpf?: string; cnpj?: string; convenio_id: string }[] = [];
+    if (cpfDocs.length > 0) {
+      const res = await batchSelectIn<{ cpf?: string; cnpj?: string; convenio_id: string }>(
+        supabase, "conveniados", "cpf, cnpj, convenio_id", "cpf", cpfDocs,
+      );
+      otherConveniados.push(...res);
+    }
+    if (cnpjDocs.length > 0) {
+      const res = await batchSelectIn<{ cpf?: string; cnpj?: string; convenio_id: string }>(
+        supabase, "conveniados", "cpf, cnpj, convenio_id", "cnpj", cnpjDocs,
+      );
+      otherConveniados.push(...res);
+    }
 
     for (const c of otherConveniados) {
       const doc = c.cpf || c.cnpj;

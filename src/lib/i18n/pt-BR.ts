@@ -154,7 +154,7 @@ export const ptBR = {
   xlsxUpdated: "conveniados atualizados",
   xlsxReactivated: "conveniados reativados",
   xlsxDeactivated: "conveniados desativados",
-  xlsxIgnored: "linhas ignoradas (CPF inválido ou vazio)",
+  xlsxIgnored: "linhas ignoradas (CPF/CNPJ inválido ou vazio)",
   xlsxImportAnother: "Importar outra planilha",
   xlsxBackToList: "Voltar para Conveniados",
   xlsxMassRemovalTitle: "Atenção: remoção em massa",
