@@ -76,7 +76,7 @@ export async function createConveniado(formData: {
   if (cpf) insertData.cpf = cpf;
   if (cnpj) insertData.cnpj = cnpj;
 
-  const { error } = await supabase.from("conveniados").insert(insertData);
+  const { error } = await supabase.from("conveniados").insert(insertData as any);
 
   if (error) {
     if (error.code === "23505") return { error: "CPF ou CNPJ já cadastrado" };
@@ -189,7 +189,7 @@ export async function importConveniados(
 
     const onConflict = cpf ? "cpf" : "cnpj";
 
-    const { error } = await supabase.from("conveniados").upsert(upsertData, {
+    const { error } = await supabase.from("conveniados").upsert(upsertData as any, {
       onConflict,
     });
 
@@ -324,7 +324,7 @@ export async function previewSyncConveniados(
       .select("id, cpf, cnpj, full_name, active")
       .eq("convenio_id", convenioId);
 
-    for (const c of existing ?? []) {
+    for (const c of (existing as any ?? [])) {
       if (c.cpf) existingMap.set(c.cpf, { id: c.id, cpf: c.cpf, full_name: c.full_name, active: c.active });
       if (c.cnpj) existingMap.set(c.cnpj, { id: c.id, cnpj: c.cnpj, full_name: c.full_name, active: c.active });
     }
@@ -510,7 +510,7 @@ export async function executeSyncConveniados(
     .eq("convenio_id", convenioId);
 
   const existingMap = new Map<string, { id: string; cpf?: string; cnpj?: string; full_name: string; active: boolean }>();
-  for (const c of existing ?? []) {
+  for (const c of (existing as any ?? [])) {
     if (c.cpf) existingMap.set(c.cpf, { id: c.id, cpf: c.cpf, full_name: c.full_name, active: c.active });
     if (c.cnpj) existingMap.set(c.cnpj, { id: c.id, cnpj: c.cnpj, full_name: c.full_name, active: c.active });
   }
@@ -539,7 +539,7 @@ export async function executeSyncConveniados(
         insertData.cnpj = doc;
       }
 
-      const { error } = await supabase.from("conveniados").insert(insertData);
+      const { error } = await supabase.from("conveniados").insert(insertData as any);
       if (!error) added++;
       else ignored.push(`Erro ao inserir ${docInfo.type.toUpperCase()} ${doc}: ${error?.message}`);
     } else {

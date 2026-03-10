@@ -633,14 +633,14 @@ export default function ImportConveniadosXlsxPage() {
                   <thead>
                     <tr className="border-b text-left text-muted-foreground">
                       <th className="py-2">{ptBR.fullName}</th>
-                      <th className="py-2">{ptBR.cpf}</th>
+                      <th className="py-2">CPF / CNPJ</th>
                     </tr>
                   </thead>
                   <tbody>
                     {validRows.slice(0, 100).map((row, i) => (
                       <tr key={i} className="border-b">
                         <td className="py-2">{row.full_name}</td>
-                        <td className="py-2">{maskCPFDisplay(row.cpf)}</td>
+                        <td className="py-2">{row.cpf ? maskCPFDisplay(row.cpf) : row.cnpj ? formatCNPJ(row.cnpj) : "N/A"}</td>
                       </tr>
                     ))}
                     {validRows.length > 100 && (

@@ -68,7 +68,7 @@ export default function ConveniadosPage() {
   }, [fetchConveniados]);
 
   const filtered = conveniados.filter(
-    (c) => {
+    (c: any) => {
       const nameMatch = c.full_name.toLowerCase().includes(search.toLowerCase());
       const cpfMatch = c.cpf?.includes(search.replace(/\D/g, "")) ?? false;
       const cnpjMatch = c.cnpj?.includes(search.replace(/\D/g, "")) ?? false;
@@ -188,7 +188,7 @@ export default function ConveniadosPage() {
             {ptBR.noResults}
           </p>
         ) : (
-          filtered.map((c) => (
+          filtered.map((c: any) => (
             <Card key={c.id} className="press-scale shadow-[var(--shadow-card)]">
               <CardContent className="flex items-center justify-between py-4">
                 <div>
@@ -237,7 +237,7 @@ export default function ConveniadosPage() {
               defaultValues={{
                 full_name: editItem.full_name,
                 cpf: editItem.cpf || undefined,
-                cnpj: editItem.cnpj || undefined,
+                cnpj: (editItem as any).cnpj || undefined,
                 convenio_id: editItem.convenio_id,
               }}
               onSubmit={handleUpdate}
